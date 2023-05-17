@@ -10,10 +10,11 @@ import (
 )
 
 func main() {
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/echo"}
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/"}
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -36,10 +37,12 @@ func main() {
 		}
 	}()
 
+	e1 := `{"id":"1","kind":"1","content":"hello world 1"}`
+	e2 := `{"id":"2","kind":"1","content":"hello world 2"}`
+
 	// Send messages to the WebSocket server
-	for i := 0; i < 5; i++ {
-		message := []byte("Hello, server!")
-		err = conn.WriteMessage(websocket.TextMessage, message)
+	for _, msg := range []string{e1, e2} {
+		err = conn.WriteMessage(websocket.TextMessage, []byte(msg))
 		if err != nil {
 			log.Println("Failed to send message to WebSocket server:", err)
 			return

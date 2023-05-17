@@ -1,11 +1,21 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/rubenvanstaden/env"
+
+	"noztr/core"
+	"noztr/mongodb"
+)
+
+var (
+	REPOSITORY_URL = env.String("REPOSITORY_URL")
 )
 
 // Upgrade the HTTP connection to a WebSocket connection
@@ -14,7 +24,10 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func echoHandler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := context.Background()
+
 	// Upgrade the connection to a WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -25,18 +38,28 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		// Read message from the WebSocket client
-		messageType, message, err := conn.ReadMessage()
+		messageType, msg, err := conn.ReadMessage()
 		if err != nil {
 			log.Println(err)
 			break
 		}
 
 		// Print the received message
-		fmt.Printf("Received from Client: %s\n", message)
+		fmt.Printf("Received from Client: %s\n", msg)
+
+		var event core.Event
+		err = json.Unmarshal(msg, &event)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("Event parsed: %#v\n", event)
+
+		repository := mongodb.New(REPOSITORY_URL, "noztr", "nevents")
+		repository.Store(ctx, &event)
 
 		// Echo the message back to the client
-        resp := string(message)
-        resp += "relay"
+        resp := fmt.Sprintf("Event published: {id: %s}", event.Id)
 		err = conn.WriteMessage(messageType, []byte(resp))
 		if err != nil {
 			log.Println(err)
@@ -46,6 +69,8 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/echo", echoHandler)
+
+	http.HandleFunc("/", handler)
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

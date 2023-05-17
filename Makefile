@@ -1,3 +1,8 @@
+SHELL := /usr/bin/env bash
+
+up:
+	docker-compose up -d
+
 relay:
 	go run ./cmd/relay/main.go
 
