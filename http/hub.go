@@ -1,5 +1,7 @@
 package http
 
+import "log"
+
 type Hub struct {
 	clients    map[*Client]bool
 	broadcast  chan []byte
@@ -27,11 +29,11 @@ func (hub *Hub) Run() {
 				close(client.send)
 			}
 		case message := <-hub.broadcast:
-            // Broadcast the message to all registered spokes.
+			// Broadcast the message to all registered spokes.
 			for client := range hub.clients {
+                log.Println("Broadcast message to clients.")
 				client.send <- message
 			}
 		}
 	}
 }
-

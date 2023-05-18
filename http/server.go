@@ -20,15 +20,15 @@ type Server struct {
 	// Non-TLS address
 	addr string
 
-    // Pointer into the spoke hub
-    hub *Hub
+	// Pointer into the spoke hub
+	hub *Hub
 }
 
 func NewServer(url string, hub *Hub) *Server {
 
 	s := &Server{
-		addr: url,
-        hub: hub,
+		addr:   url,
+		hub:    hub,
 		server: &http.Server{},
 		router: http.NewServeMux(),
 	}
