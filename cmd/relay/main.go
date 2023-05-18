@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	RELAY_URL = env.String("RELAY_URL")
+	RELAY_URL      = env.String("RELAY_URL")
 	REPOSITORY_URL = env.String("REPOSITORY_URL")
 )
 
@@ -24,7 +24,10 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
-	s := http.NewServer(RELAY_URL)
+    hub := http.NewHub()
+	go hub.Run()
+
+	s := http.NewServer(RELAY_URL, hub)
 
 	// Start the HTTP server.
 	err := s.Open()
@@ -38,8 +41,8 @@ func main() {
 	<-ctx.Done()
 
 	// Shutdown HTTP server
-    err = s.Close()
-    if err != nil {
+	err = s.Close()
+	if err != nil {
 		panic(err)
 	}
 
