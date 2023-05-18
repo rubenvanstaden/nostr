@@ -61,7 +61,7 @@ func (s *repository) Store(ctx context.Context, e *core.Event) error {
 		log.Fatal(err)
 	}
 
-    log.Printf("[%s] event stored : {event_id: %s, db_id: %s}", op, e.Id, res.InsertedID)
+	log.Printf("[%s] event stored : {event_id: %s, db_id: %s}", op, e.Id, res.InsertedID)
 
 	return nil
 }
