@@ -6,8 +6,8 @@ up:
 relay:
 	go run ./cmd/relay/main.go
 
-client:
-	go run ./cmd/client/main.go
+cli:
+	go run ./cmd/cli/*
 
 fmt:
 	go mod tidy -compat=1.17

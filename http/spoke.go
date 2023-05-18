@@ -10,10 +10,10 @@ import (
 
 type Client struct {
 
-    // Wrapping the open websocket to read user events.
+	// Wrapping the open websocket to read user events.
 	conn *websocket.Conn
 
-    // Channel to send broadcasted messages to user.
+	// Channel to send broadcasted messages to user.
 	send chan []byte
 }
 
@@ -25,7 +25,7 @@ func (s *Client) write() {
 	for {
 		select {
 		case msg := <-s.send:
-            resp := fmt.Sprintf("{msg from user A: %s}", msg)
+			resp := fmt.Sprintf("{msg from user A: %s}", msg)
 			err := s.conn.WriteMessage(websocket.TextMessage, []byte(resp))
 			if err != nil {
 				return
@@ -46,13 +46,13 @@ func (s *Client) read(hub *Hub) {
 			return
 		}
 
- 		var event core.Event
- 		err = json.Unmarshal(msg, &event)
- 		if err != nil {
- 			panic(err)
- 		}
- 
- 		fmt.Printf("Event parsed: %#v\n", event)
+		var event core.Event
+		err = json.Unmarshal(msg, &event)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("Event parsed: %#v\n", event)
 
 		hub.broadcast <- msg
 	}

@@ -24,7 +24,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
-    hub := http.NewHub()
+	hub := http.NewHub()
 	go hub.Run()
 
 	s := http.NewServer(RELAY_URL, hub)

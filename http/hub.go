@@ -27,11 +27,10 @@ func (hub *Hub) Run() {
 				close(client.send)
 			}
 		case message := <-hub.broadcast:
-            // Broadcast the message to all registered spokes.
+			// Broadcast the message to all registered spokes.
 			for client := range hub.clients {
 				client.send <- message
 			}
 		}
 	}
 }
-

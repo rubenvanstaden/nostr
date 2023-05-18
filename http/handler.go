@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-
 	//"noztr/core"
 )
 
@@ -29,9 +28,9 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    client := &Client{
-        conn: conn,
-        send: make(chan []byte),
+	client := &Client{
+		conn: conn,
+		send: make(chan []byte),
 	}
 
 	s.hub.register <- client
@@ -48,33 +47,33 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 	}()
 	wg.Wait()
 
-// 	for {
-// 		// Read message from the WebSocket client
-// 		messageType, msg, err := conn.ReadMessage()
-// 		if err != nil {
-// 			log.Println(err)
-// 			break
-// 		}
-// 
-// 		fmt.Printf("Received from Client: %s\n", msg)
-// 
-// 		var event core.Event
-// 		err = json.Unmarshal(msg, &event)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 
-// 		fmt.Printf("Event parsed: %#v\n", event)
-// 
-// 		//repository := mongodb.New(REPOSITORY_URL, "noztr", "nevents")
-// 		//repository.Store(ctx, &event)
-// 
-// 		// Echo the message back to the client
-// 		resp := fmt.Sprintf("Event published: {id: %s}", event.Id)
-// 		err = conn.WriteMessage(messageType, []byte(resp))
-// 		if err != nil {
-// 			log.Println(err)
-// 			break
-// 		}
-// 	}
+	//	for {
+	//		// Read message from the WebSocket client
+	//		messageType, msg, err := conn.ReadMessage()
+	//		if err != nil {
+	//			log.Println(err)
+	//			break
+	//		}
+	//
+	//		fmt.Printf("Received from Client: %s\n", msg)
+	//
+	//		var event core.Event
+	//		err = json.Unmarshal(msg, &event)
+	//		if err != nil {
+	//			panic(err)
+	//		}
+	//
+	//		fmt.Printf("Event parsed: %#v\n", event)
+	//
+	//		//repository := mongodb.New(REPOSITORY_URL, "noztr", "nevents")
+	//		//repository.Store(ctx, &event)
+	//
+	//		// Echo the message back to the client
+	//		resp := fmt.Sprintf("Event published: {id: %s}", event.Id)
+	//		err = conn.WriteMessage(messageType, []byte(resp))
+	//		if err != nil {
+	//			log.Println(err)
+	//			break
+	//		}
+	//	}
 }
