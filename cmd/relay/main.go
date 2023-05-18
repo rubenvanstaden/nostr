@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	RELAY_URL      = env.String("RELAY_URL")
-	REPOSITORY_URL = env.String("REPOSITORY_URL")
+	RELAY_URL      = env.WebsocketAddr("RELAY_URL")
+	REPOSITORY_URL = env.MongoAddr("REPOSITORY_URL")
 )
 
 func main() {

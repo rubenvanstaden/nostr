@@ -16,7 +16,7 @@ var addr = flag.String("relay", "", "http service address")
 
 func main() {
 
-    flag.Parse()
+	flag.Parse()
 	log.SetFlags(0)
 
 	args := flag.Args()
@@ -35,7 +35,7 @@ func main() {
 		}
 	}
 
-    // Connect to WebSocket server
+	// Connect to WebSocket server
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/ws"}
 	log.Printf("connecting to %s", u.String())
 

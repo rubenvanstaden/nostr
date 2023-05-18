@@ -49,13 +49,13 @@ func (s *Client) read(hub *Hub) {
 
 		fmt.Printf("Msg read: %s\n", msg)
 
-// 		var event core.Event
-// 		err = json.Unmarshal(msg, &event)
-// 		if err != nil {
-//             log.Fatalln("Unable to unmarshal event")
-// 		}
-// 
-// 		fmt.Printf("Event parsed: %#v\n", event)
+		// 		var event core.Event
+		// 		err = json.Unmarshal(msg, &event)
+		// 		if err != nil {
+		//             log.Fatalln("Unable to unmarshal event")
+		// 		}
+		//
+		// 		fmt.Printf("Event parsed: %#v\n", event)
 
 		hub.broadcast <- msg
 	}

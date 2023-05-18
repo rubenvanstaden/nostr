@@ -31,7 +31,7 @@ func (hub *Hub) Run() {
 		case message := <-hub.broadcast:
 			// Broadcast the message to all registered spokes.
 			for client := range hub.clients {
-                log.Println("Broadcast message to clients.")
+				log.Println("Broadcast message to clients.")
 				client.send <- message
 			}
 		}
