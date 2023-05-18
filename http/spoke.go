@@ -1,9 +1,10 @@
 package http
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
-	"noztr/core"
+	//"log"
+	//"noztr/core"
 
 	"github.com/gorilla/websocket"
 )
@@ -46,13 +47,15 @@ func (s *Client) read(hub *Hub) {
 			return
 		}
 
-		var event core.Event
-		err = json.Unmarshal(msg, &event)
-		if err != nil {
-			panic(err)
-		}
+		fmt.Printf("Msg read: %s\n", msg)
 
-		fmt.Printf("Event parsed: %#v\n", event)
+// 		var event core.Event
+// 		err = json.Unmarshal(msg, &event)
+// 		if err != nil {
+//             log.Fatalln("Unable to unmarshal event")
+// 		}
+// 
+// 		fmt.Printf("Event parsed: %#v\n", event)
 
 		hub.broadcast <- msg
 	}

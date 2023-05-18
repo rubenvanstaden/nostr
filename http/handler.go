@@ -46,34 +46,4 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		client.read(s.hub)
 	}()
 	wg.Wait()
-
-	//	for {
-	//		// Read message from the WebSocket client
-	//		messageType, msg, err := conn.ReadMessage()
-	//		if err != nil {
-	//			log.Println(err)
-	//			break
-	//		}
-	//
-	//		fmt.Printf("Received from Client: %s\n", msg)
-	//
-	//		var event core.Event
-	//		err = json.Unmarshal(msg, &event)
-	//		if err != nil {
-	//			panic(err)
-	//		}
-	//
-	//		fmt.Printf("Event parsed: %#v\n", event)
-	//
-	//		//repository := mongodb.New(REPOSITORY_URL, "noztr", "nevents")
-	//		//repository.Store(ctx, &event)
-	//
-	//		// Echo the message back to the client
-	//		resp := fmt.Sprintf("Event published: {id: %s}", event.Id)
-	//		err = conn.WriteMessage(messageType, []byte(resp))
-	//		if err != nil {
-	//			log.Println(err)
-	//			break
-	//		}
-	//	}
 }
