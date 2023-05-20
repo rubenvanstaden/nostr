@@ -3,34 +3,34 @@ package http
 import "log"
 
 type Hub struct {
-	clients    map[*Client]bool
+	spokes    map[*Spoke]bool
 	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
+	register   chan *Spoke
+	unregister chan *Spoke
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		clients:    make(map[*Client]bool),
+		spokes:    make(map[*Spoke]bool),
 		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		register:   make(chan *Spoke),
+		unregister: make(chan *Spoke),
 	}
 }
 
-func (hub *Hub) Run() {
+func (s *Hub) Run() {
 	for {
 		select {
-		case client := <-hub.register:
-			hub.clients[client] = true
-		case client := <-hub.unregister:
-			if _, ok := hub.clients[client]; ok {
-				delete(hub.clients, client)
+		case client := <-s.register:
+			s.spokes[client] = true
+		case client := <-s.unregister:
+			if _, ok := s.spokes[client]; ok {
+				delete(s.spokes, client)
 				close(client.send)
 			}
-		case message := <-hub.broadcast:
+		case message := <-s.broadcast:
 			// Broadcast the message to all registered spokes.
-			for client := range hub.clients {
+			for client := range s.spokes {
 				log.Println("Broadcast message to clients.")
 				client.send <- message
 			}

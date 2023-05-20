@@ -8,10 +8,11 @@ import (
 	"encoding/hex"
 )
 
+type Kind uint32
+
 const (
-	KindSetMetadata     uint32 = 0
-	KindTextNote        uint32 = 1
-	KindRecommendServer uint32 = 2
+    KindSetMetadata Kind = 0
+    KindTextNote Kind = 1
 )
 
 type EventId string
@@ -33,7 +34,7 @@ func NewEventId() EventId {
 type Event struct {
 	Id        EventId   `json:"id"`
 	CreatedAt Timestamp `json:"created_at"`
-	Kind      uint32    `json:"kind"`
+	Kind      Kind    `json:"kind"`
 	Content   string    `json:"content"`
 }
 

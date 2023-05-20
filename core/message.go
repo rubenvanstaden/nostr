@@ -44,10 +44,6 @@ type Message interface {
 	MarshalJSON() ([]byte, error)
 }
 
-type Filter struct {
-    Ids []EventId
-}
-
 // ----------------------------------------------
 
 type MessageEvent struct {

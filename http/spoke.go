@@ -13,17 +13,21 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Client struct {
+// A spoke is a valid user connection. And therefore can represent a subscription.
+type Spoke struct {
 
 	// Wrapping the open websocket to read user events.
 	conn *websocket.Conn
+
+    // Inmem filters.
+    filters []core.Filter
 
 	// Channel to send broadcasted messages to user.
 	send chan []byte
 }
 
 // Write message to the spoke for the end user. This is done by the Hub when a message is place on it's broadcast channel.
-func (s *Client) write() {
+func (s *Spoke) write() {
 
 	defer s.conn.Close()
 
@@ -40,7 +44,7 @@ func (s *Client) write() {
 }
 
 // Read messages coming from the spoke posted by the end user.
-func (s *Client) read(hub *Hub) {
+func (s *Spoke) read(hub *Hub) {
 
 	defer s.conn.Close()
 
@@ -53,14 +57,20 @@ func (s *Client) read(hub *Hub) {
 
 		fmt.Printf("Msg read: %s\n", raw)
 
-        var msg core.MessageEvent
+        msg := core.DecodeMessage(raw)
 
-        err = json.Unmarshal(raw, &msg)
-        if err != nil {
-            log.Fatalf("unable to unmarshal event: %v", err)
+        switch msg.Type() {
+        case "EVENT":
+            var msg core.MessageEvent
+
+            err = json.Unmarshal(raw, &msg)
+            if err != nil {
+                log.Fatalf("unable to unmarshal event: %v", err)
+            }
+
+            fmt.Printf("Event parsed: %#v\n", msg)
+        case "REQ":
         }
-
-        fmt.Printf("Event parsed: %#v\n", msg)
 
 		hub.broadcast <- raw
 		//hub.broadcast <- msg

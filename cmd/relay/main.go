@@ -27,7 +27,6 @@ func main() {
 	hub := http.NewHub()
 	go hub.Run()
 
-
 	log.Printf("Serving on address: %s\n", RELAY_URL)
 
 	s := http.NewServer(RELAY_URL, hub)

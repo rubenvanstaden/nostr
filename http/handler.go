@@ -28,22 +28,22 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &Client{
+	spoke := &Spoke{
 		conn: conn,
 		send: make(chan []byte),
 	}
 
-	s.hub.register <- client
+	s.hub.register <- spoke
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		client.write()
+		spoke.write()
 	}()
 	go func() {
 		defer wg.Done()
-		client.read(s.hub)
+		spoke.read(s.hub)
 	}()
 	wg.Wait()
 }
