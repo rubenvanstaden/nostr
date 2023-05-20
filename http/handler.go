@@ -33,7 +33,7 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		send: make(chan []byte),
 	}
 
-	s.hub.register <- spoke
+	s.relay.register <- spoke
 
 	var wg sync.WaitGroup
 	wg.Add(2)

@@ -50,20 +50,20 @@ func main() {
 	// If "post" command was used, send a message
 	if postMsg != "" {
 
-        var msgEvent core.MessageEvent
+		var msgEvent core.MessageEvent
 
-        msgEvent.Id = core.NewEventId()
-        msgEvent.Kind = 1
-        msgEvent.CreatedAt = core.Now()
-        msgEvent.Content = postMsg
+		msgEvent.Id = core.NewEventId()
+		msgEvent.Kind = 1
+		msgEvent.CreatedAt = core.Now()
+		msgEvent.Content = postMsg
 
-        // Marshal to a slice of bytes ready for transmission.
-        msg, err := json.Marshal(msgEvent)
-        if err != nil {
-            log.Fatalln("unable to marchal incoming event")
-        }
+		// Marshal to a slice of bytes ready for transmission.
+		msg, err := json.Marshal(msgEvent)
+		if err != nil {
+			log.Fatalln("unable to marchal incoming event")
+		}
 
-        // Transmit event message to the spoke that connects to the relays.
+		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
 			log.Println("write:", err)

@@ -21,14 +21,14 @@ type Server struct {
 	addr string
 
 	// Pointer into the spoke hub
-	hub *Hub
+	relay *Relay
 }
 
-func NewServer(url string, hub *Hub) *Server {
+func NewServer(url string, relay *Relay) *Server {
 
 	s := &Server{
 		addr:   url,
-		hub:    hub,
+		relay:  relay,
 		server: &http.Server{},
 		router: http.NewServeMux(),
 	}

@@ -24,17 +24,17 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
-	hub := http.NewHub()
-	go hub.Run()
+	relay := http.NewRelay()
+	go relay.Run()
 
 	log.Printf("Serving on address: %s\n", RELAY_URL)
 
-	s := http.NewServer(RELAY_URL, hub)
+	s := http.NewServer(RELAY_URL, relay)
 
 	// Start the HTTP server.
 	err := s.Open()
 	if err != nil {
-        log.Fatalf("unable to open connection to relay: %v\n", err)
+		log.Fatalf("unable to open connection to relay: %v\n", err)
 	}
 
 	log.Printf("Serving on address: %s\n", RELAY_URL)

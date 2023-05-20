@@ -1,45 +1,45 @@
 package core
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"strings"
-	"crypto/rand"
-	"encoding/hex"
 )
 
 type Kind uint32
 
 const (
-    KindSetMetadata Kind = 0
-    KindTextNote Kind = 1
+	KindSetMetadata Kind = 0
+	KindTextNote    Kind = 1
 )
 
 type EventId string
 
 func NewEventId() EventId {
 
-    // create a slice with a length of 32 bytes
+	// create a slice with a length of 32 bytes
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
-        log.Fatalf("unable to generate new event ID: %v", err)
+		log.Fatalf("unable to generate new event ID: %v", err)
 		return ""
 	}
 
-    // convert the bytes to a hex string
+	// convert the bytes to a hex string
 	return EventId(hex.EncodeToString(b))
 }
 
 type Event struct {
 	Id        EventId   `json:"id"`
 	CreatedAt Timestamp `json:"created_at"`
-	Kind      Kind    `json:"kind"`
+	Kind      Kind      `json:"kind"`
 	Content   string    `json:"content"`
 }
 
 func (s Event) GetId() string {
-    return strings.Trim(string(s.Id), "\"")
+	return strings.Trim(string(s.Id), "\"")
 }
 
 func (s Event) String() string {

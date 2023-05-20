@@ -19,14 +19,14 @@ type Spoke struct {
 	// Wrapping the open websocket to read user events.
 	conn *websocket.Conn
 
-    // Inmem filters.
-    filters []core.Filter
+	// Inmem filters. Key is subscription Id.
+	filters map[string][]core.Filter
 
 	// Channel to send broadcasted messages to user.
 	send chan []byte
 }
 
-// Write message to the spoke for the end user. This is done by the Hub when a message is place on it's broadcast channel.
+// Write message to the spoke for the end user. This is done by the Relay when a message is place on it's broadcast channel.
 func (s *Spoke) write() {
 
 	defer s.conn.Close()
@@ -44,35 +44,35 @@ func (s *Spoke) write() {
 }
 
 // Read messages coming from the spoke posted by the end user.
-func (s *Spoke) read(hub *Hub) {
+func (s *Spoke) read(relay *Relay) {
 
 	defer s.conn.Close()
 
 	for {
 		_, raw, err := s.conn.ReadMessage()
 		if err != nil {
-			hub.unregister <- s
+			relay.unregister <- s
 			return
 		}
 
 		fmt.Printf("Msg read: %s\n", raw)
 
-        msg := core.DecodeMessage(raw)
+		msg := core.DecodeMessage(raw)
 
-        switch msg.Type() {
-        case "EVENT":
-            var msg core.MessageEvent
+		switch msg.Type() {
+		case "EVENT":
+			var msg core.MessageEvent
 
-            err = json.Unmarshal(raw, &msg)
-            if err != nil {
-                log.Fatalf("unable to unmarshal event: %v", err)
-            }
+			err = json.Unmarshal(raw, &msg)
+			if err != nil {
+				log.Fatalf("unable to unmarshal event: %v", err)
+			}
 
-            fmt.Printf("Event parsed: %#v\n", msg)
-        case "REQ":
-        }
+			fmt.Printf("Event parsed: %#v\n", msg)
+		case "REQ":
+		}
 
-		hub.broadcast <- raw
+		relay.broadcast <- raw
 		//hub.broadcast <- msg
 	}
 }

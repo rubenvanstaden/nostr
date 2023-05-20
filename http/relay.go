@@ -2,23 +2,23 @@ package http
 
 import "log"
 
-type Hub struct {
-	spokes    map[*Spoke]bool
+type Relay struct {
+	spokes     map[*Spoke]bool
 	broadcast  chan []byte
 	register   chan *Spoke
 	unregister chan *Spoke
 }
 
-func NewHub() *Hub {
-	return &Hub{
-		spokes:    make(map[*Spoke]bool),
+func NewRelay() *Relay {
+	return &Relay{
+		spokes:     make(map[*Spoke]bool),
 		broadcast:  make(chan []byte),
 		register:   make(chan *Spoke),
 		unregister: make(chan *Spoke),
 	}
 }
 
-func (s *Hub) Run() {
+func (s *Relay) Run() {
 	for {
 		select {
 		case client := <-s.register:

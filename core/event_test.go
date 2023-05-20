@@ -27,36 +27,35 @@ func TestEventParsing(t *testing.T) {
 			t.Errorf("Failed to re marshal event as json: %v", err)
 		}
 
-        test.Equals(t, raw, string(got))
+		test.Equals(t, raw, string(got))
 	}
 }
 
 func TestEventSerialization(t *testing.T) {
 
-    cases := []Event {
-        {
-            Id: "92570b321da503eac8014b23447301eb3d0bbdfbace0d11a4e4072e72bb7205d",
-            CreatedAt: Timestamp(1671028682),
-            Kind: 1,
-            Content: "ping",
-        },
-    }
+	cases := []Event{
+		{
+			Id:        "92570b321da503eac8014b23447301eb3d0bbdfbace0d11a4e4072e72bb7205d",
+			CreatedAt: Timestamp(1671028682),
+			Kind:      1,
+			Content:   "ping",
+		},
+	}
 
 	for _, event := range cases {
 
-        b, err := json.Marshal(event)
-        if err != nil {
-            t.Log(event)
-            t.Error("failed to serialize this event")
-        }
+		b, err := json.Marshal(event)
+		if err != nil {
+			t.Log(event)
+			t.Error("failed to serialize this event")
+		}
 
-        var got Event
-        if err := json.Unmarshal(b, &got); err != nil {
-            t.Log(string(b))
-            t.Error("failed to re parse event just serialized")
-        }
+		var got Event
+		if err := json.Unmarshal(b, &got); err != nil {
+			t.Log(string(b))
+			t.Error("failed to re parse event just serialized")
+		}
 
-        test.Equals(t, event, got)
-    }
+		test.Equals(t, event, got)
+	}
 }
-
