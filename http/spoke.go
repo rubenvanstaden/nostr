@@ -2,7 +2,11 @@ package http
 
 import (
 	//"encoding/json"
+	"encoding/json"
 	"fmt"
+	"log"
+	"noztr/core"
+
 	//"log"
 	//"noztr/core"
 
@@ -41,22 +45,24 @@ func (s *Client) read(hub *Hub) {
 	defer s.conn.Close()
 
 	for {
-		_, msg, err := s.conn.ReadMessage()
+		_, raw, err := s.conn.ReadMessage()
 		if err != nil {
 			hub.unregister <- s
 			return
 		}
 
-		fmt.Printf("Msg read: %s\n", msg)
+		fmt.Printf("Msg read: %s\n", raw)
 
-		// 		var event core.Event
-		// 		err = json.Unmarshal(msg, &event)
-		// 		if err != nil {
-		//             log.Fatalln("Unable to unmarshal event")
-		// 		}
-		//
-		// 		fmt.Printf("Event parsed: %#v\n", event)
+        var msg core.MessageEvent
 
-		hub.broadcast <- msg
+        err = json.Unmarshal(raw, &msg)
+        if err != nil {
+            log.Fatalf("unable to unmarshal event: %v", err)
+        }
+
+        fmt.Printf("Event parsed: %#v\n", msg)
+
+		hub.broadcast <- raw
+		//hub.broadcast <- msg
 	}
 }

@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	RELAY_URL      = env.WebsocketAddr("RELAY_URL")
+	RELAY_URL      = env.String("RELAY_URL")
 	REPOSITORY_URL = env.MongoAddr("REPOSITORY_URL")
 )
 
@@ -27,12 +27,15 @@ func main() {
 	hub := http.NewHub()
 	go hub.Run()
 
+
+	log.Printf("Serving on address: %s\n", RELAY_URL)
+
 	s := http.NewServer(RELAY_URL, hub)
 
 	// Start the HTTP server.
 	err := s.Open()
 	if err != nil {
-		panic(err)
+        log.Fatalf("unable to open connection to relay: %v\n", err)
 	}
 
 	log.Printf("Serving on address: %s\n", RELAY_URL)

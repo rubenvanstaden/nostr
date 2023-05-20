@@ -31,6 +31,8 @@ github.com/rubenvanstaden/env v0.1.2 h1:tjWTlziDFdPiqyDuhvuK0xNgrnLoRvlPEx0EtpBV
 github.com/rubenvanstaden/env v0.1.2/go.mod h1:3uqUabze3StwIei/HnrseOrYLRGLIvVIdBFOZcmoLhw=
 github.com/rubenvanstaden/env v0.1.3 h1:Pi33x25N39S33pIYyDg4nFsxOgZbyWtCq1xFPAqeSio=
 github.com/rubenvanstaden/env v0.1.3/go.mod h1:3uqUabze3StwIei/HnrseOrYLRGLIvVIdBFOZcmoLhw=
+github.com/rubenvanstaden/env v0.1.4 h1:fQqF9/HyL2wP9p9+f3iCf/fAuUvVKYLPskWHrOB2oBs=
+github.com/rubenvanstaden/env v0.1.4/go.mod h1:3uqUabze3StwIei/HnrseOrYLRGLIvVIdBFOZcmoLhw=
 github.com/rubenvanstaden/test v0.1.1 h1:Zj/tWU0koXEiK2mxyzxrHOA53/BXnBOxPiGoF/I1PPA=
 github.com/rubenvanstaden/test v0.1.3 h1:alzrPs0OgCjPLeIqEokCIYeaqU6HZhSIJ/26IBKPILI=
 github.com/rubenvanstaden/test v0.1.3/go.mod h1:B1Wz/9oLoSdc/1sd/ZK+7RJbbVA1EuCrzMYSq994ZbQ=

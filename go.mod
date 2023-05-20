@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/gorilla/websocket v1.5.0
-	github.com/rubenvanstaden/env v0.1.3
+	github.com/rubenvanstaden/env v0.1.4
 	github.com/rubenvanstaden/test v0.1.3
 	go.mongodb.org/mongo-driver v1.11.6
 )

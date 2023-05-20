@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
 	"net/url"
+	"noztr/core"
 	"os"
 	"os/signal"
 	"strings"
@@ -47,7 +49,22 @@ func main() {
 
 	// If "post" command was used, send a message
 	if postMsg != "" {
-		err = c.WriteMessage(websocket.TextMessage, []byte(postMsg))
+
+        var msgEvent core.MessageEvent
+
+        msgEvent.Id = core.NewEventId()
+        msgEvent.Kind = 1
+        msgEvent.CreatedAt = core.Now()
+        msgEvent.Content = postMsg
+
+        // Marshal to a slice of bytes ready for transmission.
+        msg, err := json.Marshal(msgEvent)
+        if err != nil {
+            log.Fatalln("unable to marchal incoming event")
+        }
+
+        // Transmit event message to the spoke that connects to the relays.
+		err = c.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
 			log.Println("write:", err)
 			return

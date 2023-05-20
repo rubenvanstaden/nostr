@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"crypto/rand"
+	"encoding/hex"
 )
 
 const (
@@ -13,6 +15,20 @@ const (
 )
 
 type EventId string
+
+func NewEventId() EventId {
+
+    // create a slice with a length of 32 bytes
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+        log.Fatalf("unable to generate new event ID: %v", err)
+		return ""
+	}
+
+    // convert the bytes to a hex string
+	return EventId(hex.EncodeToString(b))
+}
 
 type Event struct {
 	Id        EventId   `json:"id"`
