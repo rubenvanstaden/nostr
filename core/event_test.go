@@ -3,6 +3,8 @@ package core
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/rubenvanstaden/test"
 )
 
 func TestEventParsing(t *testing.T) {
@@ -20,24 +22,41 @@ func TestEventParsing(t *testing.T) {
 			t.Errorf("Failed to parse event json: %v", err)
 		}
 
-		js, err := json.Marshal(event)
+		got, err := json.Marshal(event)
 		if err != nil {
 			t.Errorf("Failed to re marshal event as json: %v", err)
 		}
 
-		if string(js) != raw {
-			t.Log(string(js))
-			t.Error("JSON serialization broken")
-		}
+        test.Equals(t, raw, string(got))
 	}
 }
 
 func TestEventSerialization(t *testing.T) {
 
-    // 1. Given a set of events
-    // 2. Marshal each event to a JSON string.
-    // 3. Unmarshal each JSON string to an event.
-    // 4. Compare the new event with the original event.
+    cases := []Event {
+        {
+            Id: "92570b321da503eac8014b23447301eb3d0bbdfbace0d11a4e4072e72bb7205d",
+            CreatedAt: Timestamp(1671028682),
+            Kind: 1,
+            Content: "ping",
+        },
+    }
 
+	for _, event := range cases {
 
+        b, err := json.Marshal(event)
+        if err != nil {
+            t.Log(event)
+            t.Error("failed to serialize this event")
+        }
+
+        var got Event
+        if err := json.Unmarshal(b, &got); err != nil {
+            t.Log(string(b))
+            t.Error("failed to re parse event just serialized")
+        }
+
+        test.Equals(t, event, got)
+    }
 }
+
