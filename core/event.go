@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"log"
+	"strings"
 )
 
 const (
@@ -18,6 +19,10 @@ type Event struct {
 	CreatedAt Timestamp `json:"created_at"`
 	Kind      uint32    `json:"kind"`
 	Content   string    `json:"content"`
+}
+
+func (s Event) GetId() string {
+    return strings.Trim(string(s.Id), "\"")
 }
 
 func (s Event) String() string {
