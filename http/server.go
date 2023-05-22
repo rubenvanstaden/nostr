@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"noztr/core"
 	"time"
 )
 
@@ -22,15 +23,19 @@ type Server struct {
 
 	// Pointer into the spoke hub
 	relay *Relay
+
+    // Database store for published events.
+    repository core.Repository
 }
 
-func NewServer(url string, relay *Relay) *Server {
+func NewServer(url string, relay *Relay, repository core.Repository) *Server {
 
 	s := &Server{
 		addr:   url,
 		relay:  relay,
 		server: &http.Server{},
 		router: http.NewServeMux(),
+        repository: repository,
 	}
 
 	// Our router is wrapped by another function handler to perform some

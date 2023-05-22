@@ -1,14 +1,11 @@
 package http
 
 import (
-	//"encoding/json"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"noztr/core"
-
-	//"log"
-	//"noztr/core"
 
 	"github.com/gorilla/websocket"
 )
@@ -20,31 +17,30 @@ type Spoke struct {
 	conn *websocket.Conn
 
 	// Inmem filters. Key is subscription Id.
-	filters map[string][]core.Filter
+	filters map[string]core.Filters
 
 	// Channel to send broadcasted messages to user.
 	send chan []byte
+
+    repository core.Repository
 }
 
 // Write message to the spoke for the end user. This is done by the Relay when a message is place on it's broadcast channel.
-func (s *Spoke) write() {
+func (s *Spoke) write(ctx context.Context) {
 
 	defer s.conn.Close()
 
-	for {
-		select {
-		case msg := <-s.send:
-			resp := fmt.Sprintf("{msg from user A: %s}", msg)
-			err := s.conn.WriteMessage(websocket.TextMessage, []byte(resp))
-			if err != nil {
-				return
-			}
-		}
-	}
+    for msg := range s.send {
+        resp := fmt.Sprintf("{msg from user A: %s}", msg)
+        err := s.conn.WriteMessage(websocket.TextMessage, []byte(resp))
+        if err != nil {
+            return
+        }
+    }
 }
 
 // Read messages coming from the spoke posted by the end user.
-func (s *Spoke) read(relay *Relay) {
+func (s *Spoke) read(ctx context.Context, relay *Relay) {
 
 	defer s.conn.Close()
 
@@ -54,8 +50,6 @@ func (s *Spoke) read(relay *Relay) {
 			relay.unregister <- s
 			return
 		}
-
-		fmt.Printf("Msg read: %s\n", raw)
 
 		msg := core.DecodeMessage(raw)
 
@@ -69,10 +63,51 @@ func (s *Spoke) read(relay *Relay) {
 			}
 
 			fmt.Printf("Event parsed: %#v\n", msg)
-		case "REQ":
-		}
 
-		relay.broadcast <- raw
-		//hub.broadcast <- msg
+            // We want to obvious see our own event.
+            s.filters = make(map[string]core.Filters)
+            s.filters["0"] = core.Filters{
+                core.Filter{Ids: []string{string(msg.Id)}},
+            }
+
+            s.repository.Store(ctx, &msg.Event)
+
+			relay.broadcast <- &msg.Event
+		case "REQ":
+
+            // 1. Parse the req message from the raw stream of data.
+			var msg core.MessageReq
+			err = json.Unmarshal(raw, &msg)
+			if err != nil {
+				log.Fatalf("unable to unmarshal event: %v", err)
+			}
+
+            if len(msg.Filters) == 0 {
+                log.Println("no filters to be applied")
+            }
+
+            // 2. Query the event repository with the filter and get a set of events.
+            for _, filter := range msg.Filters {
+                events, err := s.repository.FindByIdPrefix(ctx, filter.Ids)
+                if err != nil {
+                    log.Fatalf("unable to retrieve eventd from repository: %v", err)
+                }
+
+                if len(events) == 0 {
+                    log.Println("no events found")
+                }
+
+                // 3. Send these events to the current spoke's send channel. There is no need to broadcast it to the hub, since we want to send the data to the current client. We are basically just making a roun trip to the event repo.
+                for _, event := range events {
+                    fmt.Printf("EVENT send via request: %#v\n", event)
+                    s.send <- event.Serialize()
+                }
+            }
+
+            // 4. Store the filter, over writting if subId already exists.
+            s.filters[msg.SubscriptionId] = msg.Filters
+
+			fmt.Printf("REQ parsed: %#v\n", msg)
+		}
 	}
 }

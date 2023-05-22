@@ -1,15 +1,13 @@
 package http
 
 import (
-	//"context"
-	//"encoding/json"
-	//"fmt"
+	"context"
 	"log"
 	"net/http"
+	"noztr/core"
 	"sync"
 
 	"github.com/gorilla/websocket"
-	//"noztr/core"
 )
 
 var upgrader = websocket.Upgrader{
@@ -19,7 +17,7 @@ var upgrader = websocket.Upgrader{
 
 func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 
-	//ctx := context.Background()
+	ctx := context.Background()
 
 	// Upgrade the http protocol to a websocket.
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -30,7 +28,9 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 
 	spoke := &Spoke{
 		conn: conn,
+        filters: make(map[string]core.Filters),
 		send: make(chan []byte),
+        repository: s.repository,
 	}
 
 	s.relay.register <- spoke
@@ -39,11 +39,11 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		spoke.write()
+		spoke.write(ctx)
 	}()
 	go func() {
 		defer wg.Done()
-		spoke.read(s.hub)
+		spoke.read(ctx, s.relay)
 	}()
 	wg.Wait()
 }

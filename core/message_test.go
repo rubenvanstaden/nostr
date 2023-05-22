@@ -39,3 +39,34 @@ func TestUnit_MessageEvent(t *testing.T) {
 		test.Equals(t, c.msg, string(msgJson))
 	}
 }
+
+func TestUnit_MessageReq(t *testing.T) {
+	cases := []struct {
+		msg       string
+		wantFilter    int
+		wantIds int
+		wantKinds int
+	}{
+		{
+			msg:       `["REQ","0",[{"ids":["a","b"],"kinds":[1]}]]`,
+			wantFilter: 1,
+			wantIds:    2,
+			wantKinds: 1,
+		},
+	}
+
+	for _, c := range cases {
+
+		var msg MessageReq
+
+		err := json.Unmarshal([]byte(c.msg), &msg)
+		test.Ok(t, err)
+		test.Equals(t, c.wantFilter, len(msg.Filters))
+		test.Equals(t, c.wantIds, len(msg.Filters[0].Ids))
+		test.Equals(t, c.wantKinds, len(msg.Filters[0].Kinds))
+
+		msgJson, err := json.Marshal(msg)
+		test.Ok(t, err)
+		test.Equals(t, c.msg, string(msgJson))
+	}
+}

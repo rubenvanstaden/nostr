@@ -9,6 +9,7 @@ import (
 	"github.com/rubenvanstaden/env"
 
 	"noztr/http"
+	"noztr/mongodb"
 )
 
 var (
@@ -24,12 +25,14 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
+    repository := mongodb.New(REPOSITORY_URL, "noztr", "events")
+
 	relay := http.NewRelay()
 	go relay.Run()
 
 	log.Printf("Serving on address: %s\n", RELAY_URL)
 
-	s := http.NewServer(RELAY_URL, relay)
+	s := http.NewServer(RELAY_URL, relay, repository)
 
 	// Start the HTTP server.
 	err := s.Open()
@@ -45,7 +48,7 @@ func main() {
 	// Shutdown HTTP server
 	err = s.Close()
 	if err != nil {
-		panic(err)
+		log.Fatalf("unable to CLOSE connection to relay: %v\n", err)
 	}
 
 	log.Printf("Shutdown complete: %s\n", RELAY_URL)

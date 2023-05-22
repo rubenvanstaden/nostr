@@ -44,26 +44,52 @@ func New(url, database, collection string) core.Repository {
 	}
 }
 
-func (s *repository) Store(ctx context.Context, e *core.Event) error {
+func (s *repository) Store(ctx context.Context, event *core.Event) error {
 
-	op := "mongodb.Store"
-
-	// Some dummy data to add to the Database
-	trainer := bson.D{
-		{Key: "name", Value: "Ash"},
-		{Key: "age", Value: 10},
-		{Key: "city", Value: "Pallet Town"},
-	}
+	const op = "mongodb.Store"
 
 	// Insert a single document
-	res, err := s.collection.InsertOne(context.TODO(), trainer)
+	res, err := s.collection.InsertOne(ctx, event)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("[%s] event stored : {event_id: %s, db_id: %s}", op, e.Id, res.InsertedID)
+	log.Printf("[%s] event stored : {event_id: %s, db_id: %s}", op, event.Id, res.InsertedID)
 
 	return nil
+}
+
+func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]core.Event, error) {
+
+	const op = "mongodb.FindByIdPrefix"
+	
+	var filters []bson.M
+	for _, prefix := range prefixes {
+        filter := bson.M{"id": bson.M{"$regex": "^" + prefix}}
+		filters = append(filters, filter)
+	}
+
+	cur, err := s.collection.Find(ctx, bson.M{"$or": filters})
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var results []core.Event
+	for cur.Next(ctx) {
+		var result core.Event
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Fatal(err)
+		}
+		results = append(results, result)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func (s *repository) Find(ctx context.Context, id core.EventId) (*core.Event, error) {

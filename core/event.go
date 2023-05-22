@@ -34,7 +34,7 @@ func NewEventId() EventId {
 type Event struct {
 	Id        EventId   `json:"id"`
 	CreatedAt Timestamp `json:"created_at"`
-	Kind      Kind      `json:"kind"`
+	Kind      uint32      `json:"kind"`
 	Content   string    `json:"content"`
 }
 
