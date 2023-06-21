@@ -18,7 +18,7 @@ import (
 
 var addr = flag.String("relay", "", "http service address")
 
-func parseFilters(filename string, filter *core.Filter) {
+func parseFilters(filename string, filters *core.Filters) {
     
 	file, err := os.Open(filename)
 	if err != nil {
@@ -33,7 +33,7 @@ func parseFilters(filename string, filter *core.Filter) {
 		os.Exit(1)
 	}
 
-	err = json.Unmarshal(bytes, &filter)
+	err = json.Unmarshal(bytes, &filters)
 	if err != nil {
 		fmt.Println("Error parsing JSON:", err)
 		os.Exit(1)
@@ -52,12 +52,13 @@ func main() {
 	}
 
     subId := ""
-    var filter core.Filter
 	note := ""
+    var filters core.Filters
+
 	if len(args) > 0 {
 		if args[0] == "req" && len(args) > 1 {
             subId = args[1]
-            parseFilters(args[2], &filter)
+            parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
 			note = strings.Join(args[1:], " ")
 		}
@@ -76,16 +77,15 @@ func main() {
 	if subId != "" {
 
 		var req core.MessageReq
-
 		req.SubscriptionId = subId
-        req.Filters = core.Filters{filter}
+        req.Filters = filters
 
-        fmt.Printf("subId: %s, filter: %#v", req.SubscriptionId, filter)
+        fmt.Printf("\nreq: %#v\n", req)
 
 		// Marshal to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(req)
 		if err != nil {
-			log.Fatalln("unable to marchal incoming event")
+            log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
 		}
 
 		// Transmit event message to the spoke that connects to the relays.
@@ -132,13 +132,13 @@ func main() {
 
             log.Printf("RAW return: %s", raw)
 
-//             msg := core.DecodeMessage(raw)
-//             switch msg.Type() {
-//             case "EVENT":
-//                 log.Printf("EVENT: %s", msg)
-//             default:
-//                 log.Fatalln("unknown message type from relay")
-//             }
+            msg := core.DecodeMessage(raw)
+            switch msg.Type() {
+            case "EVENT":
+                log.Printf("EVENT: %s", msg)
+            default:
+                log.Fatalln("unknown message type from relay")
+            }
         }
     }()
 

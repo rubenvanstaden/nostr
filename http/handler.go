@@ -33,6 +33,7 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
         repository: s.repository,
 	}
 
+    // Register the client to the relay.
 	s.relay.register <- spoke
 
 	var wg sync.WaitGroup

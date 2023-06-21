@@ -65,8 +65,12 @@ func TestUnit_MessageReq(t *testing.T) {
 		test.Equals(t, c.wantIds, len(msg.Filters[0].Ids))
 		test.Equals(t, c.wantKinds, len(msg.Filters[0].Kinds))
 
+        t.Log(msg)
+
 		msgJson, err := json.Marshal(msg)
 		test.Ok(t, err)
 		test.Equals(t, c.msg, string(msgJson))
+
+        t.Log(string(msgJson))
 	}
 }

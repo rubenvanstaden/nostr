@@ -109,7 +109,7 @@ func (s MessageEvent) MarshalJSON() ([]byte, error) {
 // ----------------------------------------------
 
 type MessageReq struct {
-	SubscriptionId string
+    SubscriptionId string
     Filters
 }
 
@@ -142,8 +142,11 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 
 	jsonData, err := json.Marshal(s.Filters)
 	if err != nil {
+        log.Println("kewferbffbwflekflwkefenlk")
 		log.Fatal(err)
 	}
+
+    log.Printf("%s", string(jsonData))
 
 	msg := append([]byte(nil), start...)
 	msg = append(msg, delimter...)
