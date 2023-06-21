@@ -27,13 +27,13 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	spoke := &Spoke{
-		conn: conn,
-        filters: make(map[string]core.Filters),
-		send: make(chan []byte),
-        repository: s.repository,
+		conn:       conn,
+		filters:    make(map[string]core.Filters),
+		send:       make(chan []byte),
+		repository: s.repository,
 	}
 
-    // Register the client to the relay.
+	// Register the client to the relay.
 	s.relay.register <- spoke
 
 	var wg sync.WaitGroup

@@ -1,32 +1,35 @@
 package core
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 )
 
-func DecodeMessage(data []byte) Message {
+// TODO: Split this into DecodeMessageFromRelay and DecodeMessageFromClient.
+func DecodeMessage(msg []byte) Message {
 
-	var tmp []json.RawMessage
-
-	err := json.Unmarshal(data, &tmp)
-	if err != nil {
-		log.Fatalln("unable to unmarshal client msg")
+	// Extract message label (EVENT, REQ, CLOSE, EOSE, NOTICE) from byte slice.
+	firstComma := bytes.Index(msg, []byte{','})
+	if firstComma == -1 {
+		return nil
 	}
-
-	s := strings.Trim(string(tmp[0]), "\"")
+	label := msg[0:firstComma]
 
 	var v Message
-
-	switch s {
-	case "EVENT":
+	switch {
+	case bytes.Contains(label, []byte("EVENT")):
 		v = &MessageEvent{}
-	case "REQ":
+	case bytes.Contains(label, []byte("REQ")):
 		v = &MessageReq{}
 	default:
-		log.Fatalln("Cannot decode message")
+		log.Fatalln("cannot decode message")
+	}
+
+	if err := v.UnmarshalJSON(msg); err != nil {
+		return nil
 	}
 
 	return v
@@ -81,27 +84,24 @@ func (s *MessageEvent) UnmarshalJSON(data []byte) error {
 	}
 }
 
+// NIP-01 - ["EVENT", <event JSON as defined above>]
 func (s MessageEvent) MarshalJSON() ([]byte, error) {
 
-	start := []byte(`["EVENT"`)
-	delimter := []byte(`,`)
-	end := []byte(`]`)
-
-	jsonData, err := json.Marshal(s.Event)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	msg := append([]byte(nil), start...)
-	msg = append(msg, delimter...)
+	msg := append([]byte(nil), []byte(`["EVENT",`)...)
 
 	if len(s.SubscriptionId) != 0 {
-		msg = append(msg, []byte(s.SubscriptionId)...)
-		msg = append(msg, delimter...)
+		msg = append(msg, []byte(s.SubscriptionId+`,`)...)
 	}
 
-	msg = append(msg, jsonData...)
-	msg = append(msg, end...)
+	//bytes, err := json.Marshal(s.Event)
+	//if err != nil {
+	//		log.Fatal(err)
+	//	}
+
+	bytes := s.Serialize()
+
+	msg = append(msg, bytes...)
+	msg = append(msg, []byte(`]`)...)
 
 	return msg, nil
 }
@@ -109,8 +109,8 @@ func (s MessageEvent) MarshalJSON() ([]byte, error) {
 // ----------------------------------------------
 
 type MessageReq struct {
-    SubscriptionId string
-    Filters
+	SubscriptionId string
+	Filters
 }
 
 func (s MessageReq) GetSubId() string {
@@ -130,33 +130,50 @@ func (s *MessageReq) UnmarshalJSON(data []byte) error {
 		log.Fatalln("unable to unmarshal REQ msg")
 	}
 
-    s.SubscriptionId = string(tmp[1])
-    return json.Unmarshal(tmp[2], &s.Filters)
+	s.SubscriptionId = string(tmp[1])
+
+	return json.Unmarshal(tmp[2], &s.Filters)
 }
 
+// NIP-01 - ["REQ", <subscription_id>, <filters JSON>...]
 func (s MessageReq) MarshalJSON() ([]byte, error) {
 
-	start := []byte(`["REQ"`)
-	delimter := []byte(`,`)
-	end := []byte(`]`)
+	msg := []byte(nil)
 
-	jsonData, err := json.Marshal(s.Filters)
-	if err != nil {
-        log.Println("kewferbffbwflekflwkefenlk")
-		log.Fatal(err)
+	// Open message array.
+	msg = append(msg, []byte(`[`)...)
+
+	// Add message label
+	msg = append(msg, []byte(`"REQ",`)...)
+
+	// Add subscription ID between string braces.
+	msg = append(msg, []byte(`"`+s.SubscriptionId+`",`)...)
+
+	// Open the filter list
+	msg = append(msg, []byte(`[`)...)
+
+	for i, v := range s.Filters {
+
+		// Encode the individual filter.
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Add filter data to json list.
+		msg = append(msg, bytes...)
+
+		// Add delimiter to next item, except the last one
+		if i != len(s.Filters)-1 {
+			msg = append(msg, []byte(`,`)...)
+		}
 	}
 
-    log.Printf("%s", string(jsonData))
+	// Close the filter list
+	msg = append(msg, []byte(`]`)...)
 
-	msg := append([]byte(nil), start...)
-	msg = append(msg, delimter...)
-
-    msg = append(msg, []byte(s.SubscriptionId)...)
-    msg = append(msg, delimter...)
-
-	msg = append(msg, jsonData...)
-	msg = append(msg, end...)
+	// Close the entire message.
+	msg = append(msg, []byte(`]`)...)
 
 	return msg, nil
 }
-

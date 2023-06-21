@@ -7,8 +7,8 @@ import "strings"
 
 type Filter struct {
 
-    // An id here can be a prefix string to an event ID.
-    Ids []string `json:"ids,omitempty"`
+	// An id here can be a prefix string to an event ID.
+	Ids []string `json:"ids,omitempty"`
 
 	// Only broadcast messages with kind in list.
 	Kinds []uint32 `json:"kinds,omitempty"`

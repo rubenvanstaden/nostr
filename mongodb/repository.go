@@ -62,10 +62,10 @@ func (s *repository) Store(ctx context.Context, event *core.Event) error {
 func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]core.Event, error) {
 
 	const op = "mongodb.FindByIdPrefix"
-	
+
 	var filters []bson.M
 	for _, prefix := range prefixes {
-        filter := bson.M{"id": bson.M{"$regex": "^" + prefix}}
+		filter := bson.M{"id": bson.M{"$regex": "^" + prefix}}
 		filters = append(filters, filter)
 	}
 

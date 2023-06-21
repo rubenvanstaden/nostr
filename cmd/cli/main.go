@@ -19,7 +19,7 @@ import (
 var addr = flag.String("relay", "", "http service address")
 
 func parseFilters(filename string, filters *core.Filters) {
-    
+
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
@@ -27,7 +27,7 @@ func parseFilters(filename string, filters *core.Filters) {
 	}
 	defer file.Close()
 
-    bytes, err := io.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 		os.Exit(1)
@@ -51,14 +51,14 @@ func main() {
 		log.Fatal("Missing required --relay parameter")
 	}
 
-    subId := ""
+	subId := ""
 	note := ""
-    var filters core.Filters
+	var filters core.Filters
 
 	if len(args) > 0 {
 		if args[0] == "req" && len(args) > 1 {
-            subId = args[1]
-            parseFilters(args[2], &filters)
+			subId = args[1]
+			parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
 			note = strings.Join(args[1:], " ")
 		}
@@ -78,14 +78,12 @@ func main() {
 
 		var req core.MessageReq
 		req.SubscriptionId = subId
-        req.Filters = filters
-
-        fmt.Printf("\nreq: %#v\n", req)
+		req.Filters = filters
 
 		// Marshal to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(req)
 		if err != nil {
-            log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
+			log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
 		}
 
 		// Transmit event message to the spoke that connects to the relays.
@@ -121,26 +119,26 @@ func main() {
 	}
 
 	// Start a goroutine for streaming messages from the server
-    go func() {
-        defer c.Close()
-        for {
-            _, raw, err := c.ReadMessage()
-            if err != nil {
-                log.Println("read:", err)
-                return
-            }
+	go func() {
+		defer c.Close()
+		for {
+			_, raw, err := c.ReadMessage()
+			if err != nil {
+				log.Fatalln(err)
+				return
+			}
 
-            log.Printf("RAW return: %s", raw)
-
-            msg := core.DecodeMessage(raw)
-            switch msg.Type() {
-            case "EVENT":
-                log.Printf("EVENT: %s", msg)
-            default:
-                log.Fatalln("unknown message type from relay")
-            }
-        }
-    }()
+			msg := core.DecodeMessage(raw)
+			switch msg.Type() {
+			case "EVENT":
+				log.Printf("[Relay Response] EVENT: %s", msg)
+			case "REQ":
+				log.Printf("[Relay Response] REQ: %s", msg)
+			default:
+				log.Fatalln("unknown message type from RELAY")
+			}
+		}
+	}()
 
 	// Wait for SIGINT (Ctrl+C)
 	interrupt := make(chan os.Signal, 1)
