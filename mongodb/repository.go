@@ -125,7 +125,7 @@ func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]c
 	return results, nil
 }
 
-func (s *repository) Find(ctx context.Context, id core.EventId) (*core.Event, error) {
+func (s *repository) Find(ctx context.Context, id string) (*core.Event, error) {
 
 	const op = "mongodb.FindById"
 
