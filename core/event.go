@@ -19,7 +19,7 @@ const (
 )
 
 type Event struct {
-	Id        string   `json:"id"`
+	Id        string    `json:"id"`
 	PubKey    string    `json:"pubkey"`
 	CreatedAt Timestamp `json:"created_at"`
 	Kind      uint32    `json:"kind"`
@@ -65,11 +65,11 @@ func (s Event) Serialize() []byte {
 			s.Kind,
 		))...)
 
-    // Add encoded tags.
+	// Add encoded tags.
 	out = s.Tags.Encode(out)
 	out = append(out, ',')
 
-    // Add encoded user content.
+	// Add encoded user content.
 	//out = append(out, []byte(s.Content)...)
 	out = EscapeString(out, s.Content)
 	out = append(out, ']')

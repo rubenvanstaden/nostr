@@ -136,7 +136,7 @@ func main() {
 
 		msgEvent.Kind = 1
 
-        msgEvent.Tags = nil
+		msgEvent.Tags = nil
 
 		// The note is created now.
 		msgEvent.CreatedAt = core.Now()
@@ -156,8 +156,8 @@ func main() {
 			}
 		}
 
-        log.Printf("sk: %s", sk)
-        log.Printf("pk: %s", msgEvent.PubKey)
+		log.Printf("sk: %s", sk)
+		log.Printf("pk: %s", msgEvent.PubKey)
 
 		// Set public with which the event wat pushed.
 		//msgEvent.PubKey = pk
