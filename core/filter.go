@@ -2,13 +2,13 @@ package core
 
 import "strings"
 
-// A prefix of a type obvious has to be of the same type.
-//type PrefixId EventId
-
 type Filter struct {
 
 	// An id here can be a prefix string to an event ID.
 	Ids []string `json:"ids,omitempty"`
+
+    // Filter by author public keys.
+	Authors []string `json:"authors,omitempty"`
 
 	// Only broadcast messages with kind in list.
 	Kinds []uint32 `json:"kinds,omitempty"`
@@ -35,11 +35,24 @@ func (s Filter) Matches(event *Event) bool {
 		return false
 	}
 
+	if s.Authors != nil && !containsAuthor(s.Authors, event.PubKey) {
+		return false
+	}
+
 	if s.Kinds != nil && !contains(s.Kinds, event.Kind) {
 		return false
 	}
 
 	return true
+}
+
+func containsAuthor(authors []string, pub string) bool {
+	for _, v := range authors {
+		if strings.HasPrefix(pub, v) {
+			return true
+		}
+	}
+	return false
 }
 
 func containsPrefix(prefixlist []string, id EventId) bool {

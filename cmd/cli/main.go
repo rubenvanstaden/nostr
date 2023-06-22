@@ -13,10 +13,16 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rubenvanstaden/env"
 	"github.com/gorilla/websocket"
 )
 
 var addr = flag.String("relay", "", "http service address")
+
+var (
+    PRIVATE_KEY = env.String("NSEC")
+    PUBLIC_KEY = env.String("NPUB")
+)
 
 func parseFilters(filename string, filters *core.Filters) {
 
@@ -56,7 +62,7 @@ func main() {
 	var filters core.Filters
 
 	if len(args) > 0 {
-		if args[0] == "req" && len(args) > 1 {
+        if args[0] == "req" && len(args) > 1 {
 			subId = args[1]
 			parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
@@ -99,21 +105,33 @@ func main() {
 
 		var msgEvent core.MessageEvent
 
-		msgEvent.Id = core.NewEventId()
 		msgEvent.Kind = 1
+
+        // The note is created now.
 		msgEvent.CreatedAt = core.Now()
+
+        // The user note that should be trimmed properly.
 		msgEvent.Content = note
 
-		// Marshal to a slice of bytes ready for transmission.
+        // Set public with which the event wat pushed.
+        msgEvent.PubKey = PUBLIC_KEY
+
+        // We have to sign last, since the signature is dependent on the event content.
+        msgEvent.Sign(PRIVATE_KEY)
+
+		// Marshal the signed event to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(msgEvent)
 		if err != nil {
 			log.Fatalln("unable to marchal incoming event")
 		}
 
+        log.Println("\nMSG:")
+        log.Println(string(msg))
+
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
-			log.Println("write:", err)
+			log.Fatalln(err)
 			return
 		}
 	}

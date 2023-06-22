@@ -26,6 +26,8 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    // Abstract the connection and wrap with metadata.
+    // A spoke is the interface between a client and the relay hub.
 	spoke := &Spoke{
 		conn:       conn,
 		filters:    make(map[string]core.Filters),
@@ -36,6 +38,9 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 	// Register the client to the relay.
 	s.relay.register <- spoke
 
+    // Run two goroutines:
+    // 1. Read from client and push to relay.
+    // 2. Read from relay and push to client.
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {

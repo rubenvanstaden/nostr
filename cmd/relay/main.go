@@ -30,8 +30,6 @@ func main() {
 	relay := http.NewRelay()
 	go relay.Run()
 
-	log.Printf("Serving on address: %s\n", RELAY_URL)
-
 	s := http.NewServer(RELAY_URL, relay, repository)
 
 	// Start the HTTP server.

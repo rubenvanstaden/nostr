@@ -59,6 +59,39 @@ func (s *repository) Store(ctx context.Context, event *core.Event) error {
 	return nil
 }
 
+func (s *repository) FindByAuthors(ctx context.Context, authors []string) ([]core.Event, error) {
+
+	const op = "mongodb.FindByAuthors"
+
+	var filters []bson.M
+	for _, pub := range authors {
+		filter := bson.M{"pubkey": bson.M{"$regex": "^" + pub}}
+		filters = append(filters, filter)
+	}
+
+	cur, err := s.collection.Find(ctx, bson.M{"$or": filters})
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var results []core.Event
+	for cur.Next(ctx) {
+		var result core.Event
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Fatal(err)
+		}
+		results = append(results, result)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]core.Event, error) {
 
 	const op = "mongodb.FindByIdPrefix"
