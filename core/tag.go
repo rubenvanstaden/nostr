@@ -23,7 +23,8 @@ func (tag Tag) Encode(out []byte) []byte {
 			out = append(out, ',')
 		}
 		// TODO: Escape string as describes by RFC8259
-		out = append(out, []byte(s)...)
+		//out = append(out, []byte(s)...)
+		out = EscapeString(out, s)
 	}
 	out = append(out, ']')
 	return out
