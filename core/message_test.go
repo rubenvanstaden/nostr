@@ -42,16 +42,16 @@ func TestUnit_MessageEvent(t *testing.T) {
 
 func TestUnit_MessageReq(t *testing.T) {
 	cases := []struct {
-		msg       string
-		wantFilter    int
-		wantIds int
-		wantKinds int
+		msg        string
+		wantFilter int
+		wantIds    int
+		wantKinds  int
 	}{
 		{
-			msg:       `["REQ","0",[{"ids":["a","b"],"kinds":[1]}]]`,
+			msg:        `["REQ","0",[{"ids":["a","b"],"kinds":[1]}]]`,
 			wantFilter: 1,
 			wantIds:    2,
-			wantKinds: 1,
+			wantKinds:  1,
 		},
 	}
 
@@ -65,8 +65,12 @@ func TestUnit_MessageReq(t *testing.T) {
 		test.Equals(t, c.wantIds, len(msg.Filters[0].Ids))
 		test.Equals(t, c.wantKinds, len(msg.Filters[0].Kinds))
 
+		t.Log(msg)
+
 		msgJson, err := json.Marshal(msg)
 		test.Ok(t, err)
 		test.Equals(t, c.msg, string(msgJson))
+
+		t.Log(string(msgJson))
 	}
 }

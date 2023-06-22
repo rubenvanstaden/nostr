@@ -13,13 +13,19 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rubenvanstaden/env"
 	"github.com/gorilla/websocket"
 )
 
 var addr = flag.String("relay", "", "http service address")
 
-func parseFilters(filename string, filter *core.Filter) {
-    
+var (
+    PRIVATE_KEY = env.String("NSEC")
+    PUBLIC_KEY = env.String("NPUB")
+)
+
+func parseFilters(filename string, filters *core.Filters) {
+
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
@@ -27,13 +33,13 @@ func parseFilters(filename string, filter *core.Filter) {
 	}
 	defer file.Close()
 
-    bytes, err := io.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 		os.Exit(1)
 	}
 
-	err = json.Unmarshal(bytes, &filter)
+	err = json.Unmarshal(bytes, &filters)
 	if err != nil {
 		fmt.Println("Error parsing JSON:", err)
 		os.Exit(1)
@@ -51,13 +57,14 @@ func main() {
 		log.Fatal("Missing required --relay parameter")
 	}
 
-    subId := ""
-    var filter core.Filter
+	subId := ""
 	note := ""
+	var filters core.Filters
+
 	if len(args) > 0 {
-		if args[0] == "req" && len(args) > 1 {
-            subId = args[1]
-            parseFilters(args[2], &filter)
+        if args[0] == "req" && len(args) > 1 {
+			subId = args[1]
+			parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
 			note = strings.Join(args[1:], " ")
 		}
@@ -76,16 +83,13 @@ func main() {
 	if subId != "" {
 
 		var req core.MessageReq
-
 		req.SubscriptionId = subId
-        req.Filters = core.Filters{filter}
-
-        fmt.Printf("subId: %s, filter: %#v", req.SubscriptionId, filter)
+		req.Filters = filters
 
 		// Marshal to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(req)
 		if err != nil {
-			log.Fatalln("unable to marchal incoming event")
+			log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
 		}
 
 		// Transmit event message to the spoke that connects to the relays.
@@ -101,46 +105,58 @@ func main() {
 
 		var msgEvent core.MessageEvent
 
-		msgEvent.Id = core.NewEventId()
 		msgEvent.Kind = 1
+
+        // The note is created now.
 		msgEvent.CreatedAt = core.Now()
+
+        // The user note that should be trimmed properly.
 		msgEvent.Content = note
 
-		// Marshal to a slice of bytes ready for transmission.
+        // Set public with which the event wat pushed.
+        msgEvent.PubKey = PUBLIC_KEY
+
+        // We have to sign last, since the signature is dependent on the event content.
+        msgEvent.Sign(PRIVATE_KEY)
+
+		// Marshal the signed event to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(msgEvent)
 		if err != nil {
 			log.Fatalln("unable to marchal incoming event")
 		}
 
+        log.Println("\nMSG:")
+        log.Println(string(msg))
+
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
-			log.Println("write:", err)
+			log.Fatalln(err)
 			return
 		}
 	}
 
 	// Start a goroutine for streaming messages from the server
-    go func() {
-        defer c.Close()
-        for {
-            _, raw, err := c.ReadMessage()
-            if err != nil {
-                log.Println("read:", err)
-                return
-            }
+	go func() {
+		defer c.Close()
+		for {
+			_, raw, err := c.ReadMessage()
+			if err != nil {
+				log.Fatalln(err)
+				return
+			}
 
-            log.Printf("RAW return: %s", raw)
-
-//             msg := core.DecodeMessage(raw)
-//             switch msg.Type() {
-//             case "EVENT":
-//                 log.Printf("EVENT: %s", msg)
-//             default:
-//                 log.Fatalln("unknown message type from relay")
-//             }
-        }
-    }()
+			msg := core.DecodeMessage(raw)
+			switch msg.Type() {
+			case "EVENT":
+				log.Printf("[Relay Response] EVENT: %s", msg)
+			case "REQ":
+				log.Printf("[Relay Response] REQ: %s", msg)
+			default:
+				log.Fatalln("unknown message type from RELAY")
+			}
+		}
+	}()
 
 	// Wait for SIGINT (Ctrl+C)
 	interrupt := make(chan os.Signal, 1)

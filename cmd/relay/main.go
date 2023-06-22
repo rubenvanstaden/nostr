@@ -25,12 +25,10 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
-    repository := mongodb.New(REPOSITORY_URL, "noztr", "events")
+	repository := mongodb.New(REPOSITORY_URL, "noztr", "events")
 
 	relay := http.NewRelay()
 	go relay.Run()
-
-	log.Printf("Serving on address: %s\n", RELAY_URL)
 
 	s := http.NewServer(RELAY_URL, relay, repository)
 
