@@ -25,7 +25,8 @@ type Spoke struct {
 	repository core.Repository
 }
 
-// Write message to the spoke for the end user. This is done by the Relay when a message is place on it's broadcast channel.
+// Write message to the spoke for the end user.
+// This is done by the Relay when a message is place on it's broadcast channel.
 func (s *Spoke) write(ctx context.Context) {
 
 	defer s.conn.Close()
@@ -64,8 +65,6 @@ func (s *Spoke) read(ctx context.Context, relay *Relay) {
 				log.Fatalf("unable to unmarshal event: %v", err)
 			}
 
-			//fmt.Printf("Event parsed: %#v\n", msg)
-
 			// We obvious;y want to see our own published event.
 			s.filters = make(map[string]core.Filters)
 			s.filters["0"] = core.Filters{
@@ -92,9 +91,14 @@ func (s *Spoke) read(ctx context.Context, relay *Relay) {
 			// 2. Query the event repository with the filter and get a set of events.
 			for _, filter := range msg.Filters {
 
-				events, err := s.repository.FindByIdPrefix(ctx, filter.Ids)
+// 				events, err := s.repository.FindByIdPrefix(ctx, filter.Ids)
+// 				if err != nil {
+// 					log.Fatalf("unable to retrieve events by IDs from repository: %v", err)
+// 				}
+
+                events, err := s.repository.FindByAuthors(ctx, filter.Authors)
 				if err != nil {
-					log.Fatalf("unable to retrieve eventd from repository: %v", err)
+					log.Fatalf("unable to retrieve events by IDs from repository: %v", err)
 				}
 
 				if len(events) == 0 {

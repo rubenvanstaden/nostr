@@ -99,21 +99,36 @@ func main() {
 
 		var msgEvent core.MessageEvent
 
-		msgEvent.Id = core.NewEventId()
 		msgEvent.Kind = 1
 		msgEvent.CreatedAt = core.Now()
 		msgEvent.Content = note
 
-		// Marshal to a slice of bytes ready for transmission.
+        sk := core.GeneratePrivateKey()
+
+        pub, err := core.GetPublicKey(sk)
+        if err != nil {
+            log.Fatal("unable to generate public key")
+        }
+        msgEvent.PubKey = pub
+
+        // We have to sign last, since the signature is dependent on the event content.
+        msgEvent.Sign(sk)
+
+		// Marshal the signed event to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(msgEvent)
 		if err != nil {
 			log.Fatalln("unable to marchal incoming event")
 		}
 
+        log.Println("\nMSG:")
+        log.Println(string(msg))
+        log.Println("\nPubKey:")
+        log.Println(pub)
+
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
-			log.Println("write:", err)
+			log.Fatalln(err)
 			return
 		}
 	}

@@ -49,11 +49,7 @@ func (s *Relay) Run() {
 				// Check is message passes the spokes filters.
 				for subId, filters := range spoke.filters {
 
-					log.Println(subId)
-
 					if filters.Match(event) {
-
-						log.Println("aweeeee")
 
 						msg := core.MessageEvent{
 							SubscriptionId: subId,

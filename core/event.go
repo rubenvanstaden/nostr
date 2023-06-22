@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
@@ -21,19 +20,19 @@ const (
 
 type EventId string
 
-type PubKey string
-
 type Event struct {
 	Id        EventId   `json:"id"`
-	PubKey    PubKey    `json:"pubkey"`
+	PubKey    string    `json:"pubkey"`
 	CreatedAt Timestamp `json:"created_at"`
 	Kind      uint32    `json:"kind"`
 	Content   string    `json:"content"`
 	Sig       string    `json:"sig"`
 }
 
+// To obtain the event id, we sha256 the serialized event. 
 func (s Event) GetId() string {
-	return strings.Trim(string(s.Id), "\"")
+	h := sha256.Sum256(s.Serialize())
+	return hex.EncodeToString(h[:])
 }
 
 func (s Event) String() string {
@@ -46,14 +45,12 @@ func (s Event) String() string {
 
 // The serialization is done over the UTF-8 JSON-serialized string (with no white space or line breaks).
 // [
-//
 //	0,
 //	<pubkey, as a (lowercase) hex string>,
 //	<created_at, as a number>,
 //	<kind, as a number>,
 //	<tags, as an array of arrays of non-null strings>,
 //	<content, as a string>
-//
 // ]
 func (s Event) Serialize() []byte {
 
@@ -73,11 +70,11 @@ func (s Event) Serialize() []byte {
 	return out
 }
 
-func (s *Event) Sign(pk string) error {
+func (s *Event) Sign(key string) error {
 
-	bytes, err := hex.DecodeString(pk)
+	bytes, err := hex.DecodeString(key)
 	if err != nil {
-		return fmt.Errorf("Sign called with invalid private key '%s': %w", pk, err)
+		return fmt.Errorf("Sign called with invalid private key '%s': %w", key, err)
 	}
 
 	sk, pk := btcec.PrivKeyFromBytes(bytes)
@@ -92,8 +89,6 @@ func (s *Event) Sign(pk string) error {
 
 	s.Id = EventId(hex.EncodeToString(h[:]))
 	s.Sig = hex.EncodeToString(sig.Serialize())
-
-	return nil
 
 	return nil
 }
