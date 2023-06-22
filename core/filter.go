@@ -7,7 +7,7 @@ type Filter struct {
 	// An id here can be a prefix string to an event ID.
 	Ids []string `json:"ids,omitempty"`
 
-    // Filter by author public keys.
+	// Filter by author public keys.
 	Authors []string `json:"authors,omitempty"`
 
 	// Only broadcast messages with kind in list.

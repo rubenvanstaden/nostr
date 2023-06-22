@@ -29,7 +29,7 @@ type Event struct {
 	Sig       string    `json:"sig"`
 }
 
-// To obtain the event id, we sha256 the serialized event. 
+// To obtain the event id, we sha256 the serialized event.
 func (s Event) GetId() string {
 	h := sha256.Sum256(s.Serialize())
 	return hex.EncodeToString(h[:])
@@ -45,12 +45,14 @@ func (s Event) String() string {
 
 // The serialization is done over the UTF-8 JSON-serialized string (with no white space or line breaks).
 // [
+//
 //	0,
 //	<pubkey, as a (lowercase) hex string>,
 //	<created_at, as a number>,
 //	<kind, as a number>,
 //	<tags, as an array of arrays of non-null strings>,
 //	<content, as a string>
+//
 // ]
 func (s Event) Serialize() []byte {
 
@@ -72,14 +74,21 @@ func (s Event) Serialize() []byte {
 
 func (s *Event) Sign(key string) error {
 
+	log.Printf("signing event with key: %s", key)
+
 	bytes, err := hex.DecodeString(key)
 	if err != nil {
+		log.Fatalf("unable to decode secret: %v", err)
 		return fmt.Errorf("Sign called with invalid private key '%s': %w", key, err)
 	}
+
+	log.Println("A")
 
 	sk, pk := btcec.PrivKeyFromBytes(bytes)
 	pkBytes := pk.SerializeCompressed()
 	s.PubKey = hex.EncodeToString(pkBytes[1:])
+
+	log.Println("B")
 
 	h := sha256.Sum256(s.Serialize())
 	sig, err := schnorr.Sign(sk, h[:])
@@ -87,7 +96,11 @@ func (s *Event) Sign(key string) error {
 		return err
 	}
 
+	log.Println("C")
+
 	s.Id = EventId(hex.EncodeToString(h[:]))
+	log.Println("s.Id")
+	log.Println(s.Id)
 	s.Sig = hex.EncodeToString(sig.Serialize())
 
 	return nil

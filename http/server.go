@@ -54,7 +54,7 @@ func (s *Server) Addr() string {
 // Open validates the server options and begins listening on the bind address.
 func (s *Server) Open() error {
 
-	listener, err := net.Listen("tcp", s.addr)
+	ls, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (s *Server) Open() error {
 	// Begin serving requests on the listener. We use Serve() instead of
 	// ListenAndServe() because it allows us to check for listen errors (such
 	// as trying to use an already open port) synchronously.
-	go s.server.Serve(listener)
+	go s.server.ServeTLS(ls, "out/relay.snort.social.crt", "out/relay.snort.social.key")
 
 	return nil
 }

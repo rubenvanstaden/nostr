@@ -91,12 +91,12 @@ func (s *Spoke) read(ctx context.Context, relay *Relay) {
 			// 2. Query the event repository with the filter and get a set of events.
 			for _, filter := range msg.Filters {
 
-// 				events, err := s.repository.FindByIdPrefix(ctx, filter.Ids)
-// 				if err != nil {
-// 					log.Fatalf("unable to retrieve events by IDs from repository: %v", err)
-// 				}
+				// 				events, err := s.repository.FindByIdPrefix(ctx, filter.Ids)
+				// 				if err != nil {
+				// 					log.Fatalf("unable to retrieve events by IDs from repository: %v", err)
+				// 				}
 
-                events, err := s.repository.FindByAuthors(ctx, filter.Authors)
+				events, err := s.repository.FindByAuthors(ctx, filter.Authors)
 				if err != nil {
 					log.Fatalf("unable to retrieve events by IDs from repository: %v", err)
 				}

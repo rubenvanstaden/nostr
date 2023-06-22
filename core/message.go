@@ -93,11 +93,11 @@ func (s MessageEvent) MarshalJSON() ([]byte, error) {
 		msg = append(msg, []byte(s.SubscriptionId+`,`)...)
 	}
 
-    // Marshal the signed event to a slice of bytes ready for transmission.
-    bytes, err := json.Marshal(s.Event)
-    if err != nil {
-        log.Fatalln("unable to marchal incoming event")
-    }
+	// Marshal the signed event to a slice of bytes ready for transmission.
+	bytes, err := json.Marshal(s.Event)
+	if err != nil {
+		log.Fatalln("unable to marchal incoming event")
+	}
 
 	msg = append(msg, bytes...)
 

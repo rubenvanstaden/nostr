@@ -1,27 +1,33 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
+
+	"crypto/x509"
 	"io"
+
+	"io/ioutil"
 	"log"
 	"net/url"
-	"noztr/core"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
-	"github.com/rubenvanstaden/env"
 	"github.com/gorilla/websocket"
+	"github.com/rubenvanstaden/crypto"
+	"github.com/rubenvanstaden/env"
+	"github.com/rubenvanstaden/noztr/core"
 )
 
-var addr = flag.String("relay", "", "http service address")
+var addr = flag.String("relay", "", "relay websocket address")
 
 var (
-    PRIVATE_KEY = env.String("NSEC")
-    PUBLIC_KEY = env.String("NPUB")
+	PRIVATE_KEY = env.String("NSEC")
+	PUBLIC_KEY  = env.String("NPUB")
 )
 
 func parseFilters(filename string, filters *core.Filters) {
@@ -62,7 +68,7 @@ func main() {
 	var filters core.Filters
 
 	if len(args) > 0 {
-        if args[0] == "req" && len(args) > 1 {
+		if args[0] == "req" && len(args) > 1 {
 			subId = args[1]
 			parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
@@ -70,15 +76,44 @@ func main() {
 		}
 	}
 
+	// Load our CA certificate
+	pemCerts, err := ioutil.ReadFile("out/relay.damus.io.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(pemCerts) {
+		log.Fatal("Couldn't append certs")
+	}
+
+	// Setup HTTPS client
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+	tlsConfig.BuildNameToCertificate()
+
 	// Connect to WebSocket server
-	u := url.URL{Scheme: "ws", Host: *addr, Path: "/ws"}
+	u := url.URL{Scheme: "wss", Host: *addr, Path: "/wss"}
 	log.Printf("connecting to %s", u.String())
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	d := websocket.Dialer{
+		// Configure our dialer to use our custom HTTP client
+		TLSClientConfig: tlsConfig,
+	}
+
+	// Connect to the WebSocket server
+	c, _, err := d.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
 	}
 	defer c.Close()
+
+	// 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// 	if err != nil {
+	// 		log.Fatal("dial:", err)
+	// 	}
+	// 	defer c.Close()
 
 	if subId != "" {
 
@@ -107,17 +142,32 @@ func main() {
 
 		msgEvent.Kind = 1
 
-        // The note is created now.
+		// The note is created now.
 		msgEvent.CreatedAt = core.Now()
 
-        // The user note that should be trimmed properly.
+		// The user note that should be trimmed properly.
 		msgEvent.Content = note
 
-        // Set public with which the event wat pushed.
-        msgEvent.PubKey = PUBLIC_KEY
+		// Apply NIP-19 to decode user-friendly secrets.
+		var sk string
+		if _, s, e := crypto.DecodeBech32(PRIVATE_KEY); e == nil {
+			sk = s.(string)
+		}
+		if pub, e := crypto.GetPublicKey(sk); e == nil {
+			msgEvent.PubKey = pub
+			if npub, e := crypto.EncodePublicKey(pub); e == nil {
+				fmt.Fprintln(os.Stderr, "using:", npub)
+			}
+		}
 
-        // We have to sign last, since the signature is dependent on the event content.
-        msgEvent.Sign(PRIVATE_KEY)
+		// Set public with which the event wat pushed.
+		//msgEvent.PubKey = pk
+
+		// We have to sign last, since the signature is dependent on the event content.
+		msgEvent.Sign(sk)
+
+		log.Println("\nHH:")
+		log.Println(msgEvent)
 
 		// Marshal the signed event to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(msgEvent)
@@ -125,8 +175,8 @@ func main() {
 			log.Fatalln("unable to marchal incoming event")
 		}
 
-        log.Println("\nMSG:")
-        log.Println(string(msg))
+		log.Println("\nMSG:")
+		log.Println(string(msg))
 
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
@@ -142,9 +192,13 @@ func main() {
 		for {
 			_, raw, err := c.ReadMessage()
 			if err != nil {
+				log.Println("ERRR")
 				log.Fatalln(err)
 				return
 			}
+
+			log.Println("RAW")
+			log.Println(string(raw))
 
 			msg := core.DecodeMessage(raw)
 			switch msg.Type() {
