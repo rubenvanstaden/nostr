@@ -57,16 +57,12 @@ func main() {
 		log.Fatal("Missing required --relay parameter")
 	}
 
-	nsec := ""
 	subId := ""
 	note := ""
 	var filters core.Filters
 
 	if len(args) > 0 {
-        // Generate a new private, public key pair.
-		if args[0] == "gen" && len(args) == 1 {
-			nsec = args[0]
-        } else if args[0] == "req" && len(args) > 1 {
+        if args[0] == "req" && len(args) > 1 {
 			subId = args[1]
 			parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
@@ -83,19 +79,6 @@ func main() {
 		log.Fatal("dial:", err)
 	}
 	defer c.Close()
-
-    // We want to create an account (sk, pk) pair first, then publish notes.
-	if nsec != "" {
-        sk := core.GeneratePrivateKey()
-
-        pk, err := core.GetPublicKey(sk)
-        if err != nil {
-            log.Fatal("unable to generate public key")
-        }
-
-        log.Printf("nsec: %s", sk)
-        log.Printf("npub: %s", pk)
-    }
 
 	if subId != "" {
 
