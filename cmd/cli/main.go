@@ -109,12 +109,6 @@ func main() {
 	}
 	defer c.Close()
 
-	// 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	// 	if err != nil {
-	// 		log.Fatal("dial:", err)
-	// 	}
-	// 	defer c.Close()
-
 	if subId != "" {
 
 		var req core.MessageReq
@@ -142,6 +136,8 @@ func main() {
 
 		msgEvent.Kind = 1
 
+        msgEvent.Tags = nil
+
 		// The note is created now.
 		msgEvent.CreatedAt = core.Now()
 
@@ -159,6 +155,9 @@ func main() {
 				fmt.Fprintln(os.Stderr, "using:", npub)
 			}
 		}
+
+        log.Printf("sk: %s", sk)
+        log.Printf("pk: %s", msgEvent.PubKey)
 
 		// Set public with which the event wat pushed.
 		//msgEvent.PubKey = pk
@@ -183,18 +182,17 @@ func main() {
 		}
 	}
 
-	// Start a goroutine for streaming messages from the server
+	// Streaming reponses from the connected relay.
 	go func() {
 		defer c.Close()
 		for {
 			_, raw, err := c.ReadMessage()
 			if err != nil {
-				log.Println("ERRR")
 				log.Fatalln(err)
 				return
 			}
 
-			log.Println("RAW")
+			log.Println("\nRelay Response:")
 			log.Println(string(raw))
 
 			msg := core.DecodeMessage(raw)

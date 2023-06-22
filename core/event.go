@@ -18,10 +18,8 @@ const (
 	KindTextNote    Kind = 1
 )
 
-type EventId string
-
 type Event struct {
-	Id        EventId   `json:"id"`
+	Id        string   `json:"id"`
 	PubKey    string    `json:"pubkey"`
 	CreatedAt Timestamp `json:"created_at"`
 	Kind      uint32    `json:"kind"`
@@ -102,7 +100,7 @@ func (s *Event) Sign(key string) error {
 		return err
 	}
 
-	s.Id = EventId(hex.EncodeToString(h[:]))
+	s.Id = hex.EncodeToString(h[:])
 	s.Sig = hex.EncodeToString(sig.Serialize())
 
 	log.Printf("event signed with ID: %s", s.Id)

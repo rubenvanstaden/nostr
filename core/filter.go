@@ -55,7 +55,7 @@ func containsAuthor(authors []string, pub string) bool {
 	return false
 }
 
-func containsPrefix(prefixlist []string, id EventId) bool {
+func containsPrefix(prefixlist []string, id string) bool {
 	for _, prefix := range prefixlist {
 		if strings.HasPrefix(string(id), prefix) {
 			return true
