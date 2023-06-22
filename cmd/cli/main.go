@@ -166,9 +166,6 @@ func main() {
 		// We have to sign last, since the signature is dependent on the event content.
 		msgEvent.Sign(sk)
 
-		log.Println("\nHH:")
-		log.Println(msgEvent)
-
 		// Marshal the signed event to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(msgEvent)
 		if err != nil {

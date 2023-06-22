@@ -25,6 +25,7 @@ type Event struct {
 	PubKey    string    `json:"pubkey"`
 	CreatedAt Timestamp `json:"created_at"`
 	Kind      uint32    `json:"kind"`
+	Tags      Tags      `json:"tags"`
 	Content   string    `json:"content"`
 	Sig       string    `json:"sig"`
 }
@@ -66,6 +67,11 @@ func (s Event) Serialize() []byte {
 			s.Kind,
 		))...)
 
+    // Add encoded tags.
+	out = s.Tags.Encode(out)
+	out = append(out, ',')
+
+    // Add encoded user content.
 	out = append(out, []byte(s.Content)...)
 	out = append(out, ']')
 
@@ -82,13 +88,13 @@ func (s *Event) Sign(key string) error {
 		return fmt.Errorf("Sign called with invalid private key '%s': %w", key, err)
 	}
 
-	log.Println("A")
+	if s.Tags == nil {
+		s.Tags = make(Tags, 0)
+	}
 
 	sk, pk := btcec.PrivKeyFromBytes(bytes)
 	pkBytes := pk.SerializeCompressed()
 	s.PubKey = hex.EncodeToString(pkBytes[1:])
-
-	log.Println("B")
 
 	h := sha256.Sum256(s.Serialize())
 	sig, err := schnorr.Sign(sk, h[:])
@@ -96,12 +102,10 @@ func (s *Event) Sign(key string) error {
 		return err
 	}
 
-	log.Println("C")
-
 	s.Id = EventId(hex.EncodeToString(h[:]))
-	log.Println("s.Id")
-	log.Println(s.Id)
 	s.Sig = hex.EncodeToString(sig.Serialize())
+
+	log.Printf("event signed with ID: %s", s.Id)
 
 	return nil
 }
