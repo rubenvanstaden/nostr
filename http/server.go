@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"noztr/core"
 	"time"
 )
 
@@ -21,16 +22,20 @@ type Server struct {
 	addr string
 
 	// Pointer into the spoke hub
-	hub *Hub
+	relay *Relay
+
+	// Database store for published events.
+	repository core.Repository
 }
 
-func NewServer(url string, hub *Hub) *Server {
+func NewServer(url string, relay *Relay, repository core.Repository) *Server {
 
 	s := &Server{
-		addr:   url,
-		hub:    hub,
-		server: &http.Server{},
-		router: http.NewServeMux(),
+		addr:       url,
+		relay:      relay,
+		server:     &http.Server{},
+		router:     http.NewServeMux(),
+		repository: repository,
 	}
 
 	// Our router is wrapped by another function handler to perform some
@@ -49,7 +54,7 @@ func (s *Server) Addr() string {
 // Open validates the server options and begins listening on the bind address.
 func (s *Server) Open() error {
 
-	listener, err := net.Listen("tcp", s.addr)
+	ls, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
 	}
@@ -57,7 +62,7 @@ func (s *Server) Open() error {
 	// Begin serving requests on the listener. We use Serve() instead of
 	// ListenAndServe() because it allows us to check for listen errors (such
 	// as trying to use an already open port) synchronously.
-	go s.server.Serve(listener)
+	go s.server.ServeTLS(ls, "out/relay.snort.social.crt", "out/relay.snort.social.key")
 
 	return nil
 }
