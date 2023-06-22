@@ -13,10 +13,16 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rubenvanstaden/env"
 	"github.com/gorilla/websocket"
 )
 
 var addr = flag.String("relay", "", "http service address")
+
+var (
+    PRIVATE_KEY = env.String("NSEC")
+    PUBLIC_KEY = env.String("NPUB")
+)
 
 func parseFilters(filename string, filters *core.Filters) {
 
@@ -51,12 +57,16 @@ func main() {
 		log.Fatal("Missing required --relay parameter")
 	}
 
+	nsec := ""
 	subId := ""
 	note := ""
 	var filters core.Filters
 
 	if len(args) > 0 {
-		if args[0] == "req" && len(args) > 1 {
+        // Generate a new private, public key pair.
+		if args[0] == "gen" && len(args) == 1 {
+			nsec = args[0]
+        } else if args[0] == "req" && len(args) > 1 {
 			subId = args[1]
 			parseFilters(args[2], &filters)
 		} else if args[0] == "note" && len(args) > 1 {
@@ -73,6 +83,19 @@ func main() {
 		log.Fatal("dial:", err)
 	}
 	defer c.Close()
+
+    // We want to create an account (sk, pk) pair first, then publish notes.
+	if nsec != "" {
+        sk := core.GeneratePrivateKey()
+
+        pk, err := core.GetPublicKey(sk)
+        if err != nil {
+            log.Fatal("unable to generate public key")
+        }
+
+        log.Printf("nsec: %s", sk)
+        log.Printf("npub: %s", pk)
+    }
 
 	if subId != "" {
 
@@ -100,19 +123,18 @@ func main() {
 		var msgEvent core.MessageEvent
 
 		msgEvent.Kind = 1
+
+        // The note is created now.
 		msgEvent.CreatedAt = core.Now()
+
+        // The user note that should be trimmed properly.
 		msgEvent.Content = note
 
-        sk := core.GeneratePrivateKey()
-
-        pub, err := core.GetPublicKey(sk)
-        if err != nil {
-            log.Fatal("unable to generate public key")
-        }
-        msgEvent.PubKey = pub
+        // Set public with which the event wat pushed.
+        msgEvent.PubKey = PUBLIC_KEY
 
         // We have to sign last, since the signature is dependent on the event content.
-        msgEvent.Sign(sk)
+        msgEvent.Sign(PRIVATE_KEY)
 
 		// Marshal the signed event to a slice of bytes ready for transmission.
 		msg, err := json.Marshal(msgEvent)
@@ -122,8 +144,6 @@ func main() {
 
         log.Println("\nMSG:")
         log.Println(string(msg))
-        log.Println("\nPubKey:")
-        log.Println(pub)
 
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
