@@ -13,6 +13,7 @@ NOTE: Use the [crypto](https://github.com/rubenvanstaden/crypto) package to gene
 export NSEC="nsec..."
 export NPUB="npub..."
 export RELAY="relay.damus.io:443"
+export RELAY_CERT=cert/relay.damus.io.pem
 ```
 
 ```shell
