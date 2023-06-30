@@ -8,8 +8,8 @@ import (
 
 	"github.com/rubenvanstaden/env"
 
-	"github.com/rubenvanstaden/nostr/http"
 	"github.com/rubenvanstaden/nostr/mongodb"
+	"github.com/rubenvanstaden/nostr/relay"
 )
 
 var (
@@ -27,10 +27,10 @@ func main() {
 
 	repository := mongodb.New(REPOSITORY_URL, "noztr", "events")
 
-	relay := http.NewRelay()
-	go relay.Run()
+	hub := relay.NewHub()
+	go hub.Run()
 
-	s := http.NewServer(RELAY_URL, relay, repository)
+	s := relay.NewServer(RELAY_URL, hub, repository)
 
 	// Start the HTTP server.
 	err := s.Open()

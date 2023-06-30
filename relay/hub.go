@@ -1,4 +1,4 @@
-package http
+package relay
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/rubenvanstaden/nostr/core"
 )
 
-type Relay struct {
+type Hub struct {
 
 	// Data structure to in-memory store registered spokes.
 	spokes map[*Spoke]bool
@@ -22,8 +22,8 @@ type Relay struct {
 	unregister chan *Spoke
 }
 
-func NewRelay() *Relay {
-	return &Relay{
+func NewHub() *Hub {
+	return &Hub{
 		spokes:     make(map[*Spoke]bool),
 		broadcast:  make(chan *core.Event),
 		register:   make(chan *Spoke),
@@ -32,7 +32,7 @@ func NewRelay() *Relay {
 }
 
 // TODO: Add context with done for shutdown.
-func (s *Relay) Run() {
+func (s *Hub) Run() {
 	for {
 		select {
 		case spoke := <-s.register:

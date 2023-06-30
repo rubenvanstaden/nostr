@@ -2,32 +2,38 @@
 
 Nostr command line tool and relay setup.
 
+NOTE: Use the [crypto](https://github.com/rubenvanstaden/crypto) package to generate a key exchange.
+
+## Client CLI
+
 - Test with Damus relay
 
 ```shell
-./bin/ncli --relay relay.damus.io:443 note "fsociety"
-```
-
-```shell
-# Generate an account
-crypto gen
-
 # Set as environment variables
-export NSEC=""
-export NPUB=""
+export NSEC="nsec..."
+export NPUB="npub..."
+export RELAY="relay.damus.io:443"
 ```
 
 ```shell
-# Terminal 0
+# Post a note from the terminal.
+./bin/ncli --relay $RELAY note "fsociety"
+
+# Request a set of notes based on the filter configuration.
+./bin/ncli --relay $RELAY req 001 ~/.config/noztr/config.json
+```
+
+## Run Relay
+
+```shell
+// Set environment variables
+export RELAY="127.0.0.1:8080"
+export REPOSITORY="mongodb://127.0.0.1:27017"
+
+// Spin up docker container
 make up
-export RELAY_URL="127.0.0.1:8080"
-export REPOSITORY_URL="mongodb://127.0.0.1:27017"
+
+// Spin up the relay service using websocket.
 make relay
-
-# Terminal 1: Listen to incoming messages broadcasted by hub
-./bin/nz --relay 127.0.0.1:8080 req 001 ~/.config/noztr/config.json
-
-# Terminal 2: Post a new message for Terminal 1
-./bin/nz --relay 127.0.0.1:8080 note "hello world"
 ```
 

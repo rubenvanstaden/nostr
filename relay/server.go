@@ -1,4 +1,4 @@
-package http
+package relay
 
 import (
 	"context"
@@ -23,17 +23,17 @@ type Server struct {
 	addr string
 
 	// Pointer into the spoke hub
-	relay *Relay
+	hub *Hub
 
 	// Database store for published events.
 	repository core.Repository
 }
 
-func NewServer(url string, relay *Relay, repository core.Repository) *Server {
+func NewServer(url string, hub *Hub, repository core.Repository) *Server {
 
 	s := &Server{
 		addr:       url,
-		relay:      relay,
+		hub:        hub,
 		server:     &http.Server{},
 		router:     http.NewServeMux(),
 		repository: repository,
