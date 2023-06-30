@@ -77,7 +77,7 @@ func main() {
 	}
 
 	// Load our CA certificate
-	pemCerts, err := ioutil.ReadFile("out/relay.damus.io.pem")
+	pemCerts, err := ioutil.ReadFile("cert/relay.damus.io.pem")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,6 +150,7 @@ func main() {
 			sk = s.(string)
 		}
 		if pub, e := crypto.GetPublicKey(sk); e == nil {
+            // Set public with which the event wat pushed.
 			msgEvent.PubKey = pub
 			if npub, e := crypto.EncodePublicKey(pub); e == nil {
 				fmt.Fprintln(os.Stderr, "using:", npub)
@@ -158,9 +159,6 @@ func main() {
 
 		log.Printf("sk: %s", sk)
 		log.Printf("pk: %s", msgEvent.PubKey)
-
-		// Set public with which the event wat pushed.
-		//msgEvent.PubKey = pk
 
 		// We have to sign last, since the signature is dependent on the event content.
 		msgEvent.Sign(sk)
@@ -171,8 +169,7 @@ func main() {
 			log.Fatalln("unable to marchal incoming event")
 		}
 
-		log.Println("\nMSG:")
-		log.Println(string(msg))
+        log.Printf("Note Published - %s", msg)
 
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
@@ -192,17 +189,14 @@ func main() {
 				return
 			}
 
-			log.Println("\nRelay Response:")
-			log.Println(string(raw))
-
 			msg := core.DecodeMessage(raw)
 			switch msg.Type() {
 			case "EVENT":
-				log.Printf("[Relay Response] EVENT: %#v", msg)
+				log.Printf("[Relay Response] EVENT - %#v", msg)
 			case "REQ":
-				log.Printf("[Relay Response] REQ: %#v", msg)
+				log.Printf("[Relay Response] REQ - %#v", msg)
 			case "OK":
-				log.Printf("[Relay Response] OK: %#v", msg)
+				log.Printf("[Relay Response] OK - %v", msg)
 			default:
 				log.Fatalln("unknown message type from RELAY")
 			}
