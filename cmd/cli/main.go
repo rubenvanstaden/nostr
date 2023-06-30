@@ -97,8 +97,8 @@ func main() {
 	u := url.URL{Scheme: "wss", Host: *addr, Path: "/wss"}
 	log.Printf("connecting to %s", u.String())
 
+    // Configure our dialer to use our custom HTTP client
 	d := websocket.Dialer{
-		// Configure our dialer to use our custom HTTP client
 		TLSClientConfig: tlsConfig,
 	}
 
@@ -198,9 +198,11 @@ func main() {
 			msg := core.DecodeMessage(raw)
 			switch msg.Type() {
 			case "EVENT":
-				log.Printf("[Relay Response] EVENT: %s", msg)
+				log.Printf("[Relay Response] EVENT: %#v", msg)
 			case "REQ":
-				log.Printf("[Relay Response] REQ: %s", msg)
+				log.Printf("[Relay Response] REQ: %#v", msg)
+			case "OK":
+				log.Printf("[Relay Response] OK: %#v", msg)
 			default:
 				log.Fatalln("unknown message type from RELAY")
 			}

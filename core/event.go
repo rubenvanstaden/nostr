@@ -18,6 +18,10 @@ const (
 	KindTextNote    Kind = 1
 )
 
+type Result struct {
+    
+}
+
 type Event struct {
 	Id        string    `json:"id"`
 	PubKey    string    `json:"pubkey"`

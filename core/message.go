@@ -24,6 +24,8 @@ func DecodeMessage(msg []byte) Message {
 		v = &MessageEvent{}
 	case bytes.Contains(label, []byte("REQ")):
 		v = &MessageReq{}
+	case bytes.Contains(label, []byte("OK")):
+		v = &MessageResult{}
 	default:
 		log.Fatalln("cannot decode message")
 	}
@@ -47,6 +49,59 @@ type Message interface {
 
 	// Implement json.Marshaler interface
 	MarshalJSON() ([]byte, error)
+}
+
+// ----------------------------------------------
+
+// NIP-20 - ["OK", <event_id>, <true|false>, <message>]
+type MessageResult struct {
+    EventId string
+    Stored bool
+    Message string
+}
+
+func (s MessageResult) Type() MessageType {
+	return MessageType("OK")
+}
+
+func (s *MessageResult) UnmarshalJSON(data []byte) error {
+
+	var tmp []json.RawMessage
+
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		log.Fatalln("unable to unmarshal result msg from relay")
+	}
+
+	s.EventId = string(tmp[1])
+
+    s.Stored = false
+    if string(tmp[2]) == "true" {
+        s.Stored = true
+    }
+
+	s.Message = string(tmp[3])
+
+	return nil
+}
+
+func (s MessageResult) MarshalJSON() ([]byte, error) {
+
+	msg := append([]byte(nil), []byte(`["OK",`)...)
+
+	if len(s.EventId) != 0 {
+		msg = append(msg, []byte(s.EventId+`,`)...)
+	}
+
+    if s.Stored {
+        msg = append(msg, []byte("true")...)
+    } else {
+        msg = append(msg, []byte("false")...)
+    }
+
+	msg = append(msg, []byte(s.Message + `]`)...)
+
+	return msg, nil
 }
 
 // ----------------------------------------------
