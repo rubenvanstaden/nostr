@@ -1,6 +1,12 @@
-# NoZtr
+# Nostr
 
-Notes and Other Zettels Transmitted by Relays
+Nostr command line tool and relay setup.
+
+- Test with Damus relay
+
+```shell
+./bin/ncli --relay relay.damus.io:443 note "fsociety"
+```
 
 ```shell
 # Generate an account
@@ -24,3 +30,4 @@ make relay
 # Terminal 2: Post a new message for Terminal 1
 ./bin/nz --relay 127.0.0.1:8080 note "hello world"
 ```
+

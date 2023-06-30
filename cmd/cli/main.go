@@ -20,7 +20,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/env"
-	"github.com/rubenvanstaden/noztr/core"
+	"github.com/rubenvanstaden/nostr/core"
 )
 
 var addr = flag.String("relay", "", "relay websocket address")

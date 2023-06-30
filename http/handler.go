@@ -4,10 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"noztr/core"
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/rubenvanstaden/nostr/core"
 )
 
 var upgrader = websocket.Upgrader{

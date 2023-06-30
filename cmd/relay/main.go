@@ -8,8 +8,8 @@ import (
 
 	"github.com/rubenvanstaden/env"
 
-	"noztr/http"
-	"noztr/mongodb"
+	"github.com/rubenvanstaden/nostr/http"
+	"github.com/rubenvanstaden/nostr/mongodb"
 )
 
 var (

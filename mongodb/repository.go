@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"noztr/core"
+	"github.com/rubenvanstaden/nostr/core"
 )
 
 type repository struct {

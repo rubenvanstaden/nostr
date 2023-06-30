@@ -3,7 +3,8 @@ package http
 import (
 	"encoding/json"
 	"log"
-	"noztr/core"
+
+	"github.com/rubenvanstaden/nostr/core"
 )
 
 type Relay struct {

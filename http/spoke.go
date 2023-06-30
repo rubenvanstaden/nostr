@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"noztr/core"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/rubenvanstaden/nostr/core"
 )
 
 // A spoke is a valid user connection and therefore represents a user subscription.

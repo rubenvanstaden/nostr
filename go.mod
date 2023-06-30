@@ -1,4 +1,4 @@
-module github.com/rubenvanstaden/noztr
+module github.com/rubenvanstaden/nostr
 
 go 1.19
 

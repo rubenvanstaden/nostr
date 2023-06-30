@@ -4,8 +4,9 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"noztr/core"
 	"time"
+
+	"github.com/rubenvanstaden/nostr/core"
 )
 
 const ShutdownTimeout = 1 * time.Second
