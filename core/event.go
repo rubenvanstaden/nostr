@@ -19,7 +19,6 @@ const (
 )
 
 type Result struct {
-    
 }
 
 type Event struct {

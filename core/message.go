@@ -55,9 +55,9 @@ type Message interface {
 
 // NIP-20 - ["OK", <event_id>, <true|false>, <message>]
 type MessageResult struct {
-    EventId string
-    Stored bool
-    Message string
+	EventId string
+	Stored  bool
+	Message string
 }
 
 func (s MessageResult) Type() MessageType {
@@ -75,10 +75,10 @@ func (s *MessageResult) UnmarshalJSON(data []byte) error {
 
 	s.EventId = string(tmp[1])
 
-    s.Stored = false
-    if string(tmp[2]) == "true" {
-        s.Stored = true
-    }
+	s.Stored = false
+	if string(tmp[2]) == "true" {
+		s.Stored = true
+	}
 
 	s.Message = string(tmp[3])
 
@@ -93,13 +93,13 @@ func (s MessageResult) MarshalJSON() ([]byte, error) {
 		msg = append(msg, []byte(s.EventId+`,`)...)
 	}
 
-    if s.Stored {
-        msg = append(msg, []byte("true")...)
-    } else {
-        msg = append(msg, []byte("false")...)
-    }
+	if s.Stored {
+		msg = append(msg, []byte("true")...)
+	} else {
+		msg = append(msg, []byte("false")...)
+	}
 
-	msg = append(msg, []byte(s.Message + `]`)...)
+	msg = append(msg, []byte(s.Message+`]`)...)
 
 	return msg, nil
 }

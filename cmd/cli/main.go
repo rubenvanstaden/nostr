@@ -97,7 +97,7 @@ func main() {
 	u := url.URL{Scheme: "wss", Host: *addr, Path: "/wss"}
 	log.Printf("connecting to %s", u.String())
 
-    // Configure our dialer to use our custom HTTP client
+	// Configure our dialer to use our custom HTTP client
 	d := websocket.Dialer{
 		TLSClientConfig: tlsConfig,
 	}
@@ -150,7 +150,7 @@ func main() {
 			sk = s.(string)
 		}
 		if pub, e := crypto.GetPublicKey(sk); e == nil {
-            // Set public with which the event wat pushed.
+			// Set public with which the event wat pushed.
 			msgEvent.PubKey = pub
 			if npub, e := crypto.EncodePublicKey(pub); e == nil {
 				fmt.Fprintln(os.Stderr, "using:", npub)
@@ -169,7 +169,7 @@ func main() {
 			log.Fatalln("unable to marchal incoming event")
 		}
 
-        log.Printf("Note Published - %s", msg)
+		log.Printf("Note Published - %s", msg)
 
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
