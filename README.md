@@ -38,3 +38,22 @@ make up
 make relay
 ```
 
+## CLI Interface
+
+```shell
+# Manage relays
+ncli relay ls
+ncli relay add
+ncli relay remove
+
+# Manage events
+ncli event note <content>
+ncli event metadata <content>
+ncli event recommend <content>
+
+# Manage user following
+ncli follow ls
+ncli follow add <pubkey>
+ncli follow remove <pubkey>
+```
+
