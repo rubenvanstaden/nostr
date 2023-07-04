@@ -1,15 +1,15 @@
 package main
 
 import (
-	"crypto/tls"
+	//"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
 
-	"crypto/x509"
+	//"crypto/x509"
 	"io"
 
-	"io/ioutil"
+	//"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -77,40 +77,43 @@ func main() {
 		}
 	}
 
-	// Load our CA certificate
-	pemCerts, err := ioutil.ReadFile(RELAY_CERT)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	caCertPool := x509.NewCertPool()
-	if !caCertPool.AppendCertsFromPEM(pemCerts) {
-		log.Fatal("Couldn't append certs")
-	}
-
-    log.Printf("pemCert: %s", caCertPool)
-
-	// Setup HTTPS client
-	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-
 	// Connect to WebSocket server
-	u := url.URL{Scheme: "wss", Host: *addr, Path: "/wss"}
+	u := url.URL{Scheme: "ws", Host: *addr, Path: ""}
 	log.Printf("connecting to %s", u.String())
 
-	// Configure our dialer to use our custom HTTP client
-	d := websocket.Dialer{
-		TLSClientConfig: tlsConfig,
-	}
-
-	// Connect to the WebSocket server
-	c, _, err := d.Dial(u.String(), nil)
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Fatal("dial:", err)
+		log.Fatal("dial: ", err)
 	}
 	defer c.Close()
+
+	// 	// Load our CA certificate
+	// 	pemCerts, err := ioutil.ReadFile(RELAY_CERT)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	caCertPool := x509.NewCertPool()
+	// 	if !caCertPool.AppendCertsFromPEM(pemCerts) {
+	// 		log.Fatal("Couldn't append certs")
+	// 	}
+	// 	// Setup HTTPS client
+	// 	tlsConfig := &tls.Config{
+	// 		RootCAs: caCertPool,
+	// 	}
+	// 	tlsConfig.BuildNameToCertificate()
+	// 	// Connect to WebSocket server
+	// 	u := url.URL{Scheme: "wss", Host: *addr, Path: "/wss"}
+	// 	log.Printf("connecting to %s", u.String())
+	// 	// Configure our dialer to use our custom HTTP client
+	// 	d := websocket.Dialer{
+	// 		TLSClientConfig: tlsConfig,
+	// 	}
+	// 	// Connect to the WebSocket server
+	// 	c, _, err := d.Dial(u.String(), nil)
+	// 	if err != nil {
+	// 		log.Fatal("dial:", err)
+	// 	}
+	// 	defer c.Close()
 
 	if subId != "" {
 
@@ -124,7 +127,7 @@ func main() {
 			log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
 		}
 
-        log.Printf("REQ message: %#v", string(msg))
+		log.Printf("REQ message: %#v", string(msg))
 
 		// Transmit event message to the spoke that connects to the relays.
 		err = c.WriteMessage(websocket.TextMessage, msg)
@@ -191,14 +194,12 @@ func main() {
 				return
 			}
 
-            log.Printf("\nRAW response: %s\n", raw)
-
 			msg := core.DecodeMessage(raw)
 			switch msg.Type() {
 			case "EVENT":
-				log.Printf("[Relay Response] EVENT - %#v", msg)
+				log.Printf("\n[Relay Response] EVENT - %v", msg)
 			case "REQ":
-				log.Printf("[Relay Response] REQ - %#v", msg)
+				log.Printf("\n[Relay Response] REQ - %v", msg)
 			case "OK":
 				log.Printf("\n[Relay Response] OK - %v", msg)
 			default:

@@ -205,7 +205,7 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 	msg = append(msg, []byte(`"`+s.SubscriptionId+`",`)...)
 
 	// Open the filter list
-	msg = append(msg, []byte(`[`)...)
+	//msg = append(msg, []byte(`{`)...)
 
 	for i, v := range s.Filters {
 
@@ -225,7 +225,7 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 	}
 
 	// Close the filter list
-	msg = append(msg, []byte(`]`)...)
+	//msg = append(msg, []byte(`}`)...)
 
 	// Close the entire message.
 	msg = append(msg, []byte(`]`)...)
