@@ -44,6 +44,7 @@ func root(args []string, cc *Connection) error {
 	}
 
 	cmds := []Runner{
+        NewProfile(cc),
 		NewEvent(cc),
 		NewFollow(cc),
 	}
@@ -113,7 +114,10 @@ func main() {
 			case "REQ":
 				log.Printf("\n[Relay Response] REQ - %v", msg)
 			case "OK":
-				log.Printf("[\033[32m*\033[0m] Relay - (status: OK)")
+				e := msg.(*core.MessageResult)
+				log.Printf("[\033[32m*\033[0m] Relay")
+				log.Printf("  status: OK")
+				log.Printf("  message: %s", e.Message)
 			default:
 				log.Fatalln("unknown message type from RELAY")
 			}
