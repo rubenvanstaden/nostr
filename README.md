@@ -4,7 +4,15 @@ Nostr command line tool and relay setup.
 
 NOTE: Use the [crypto](https://github.com/rubenvanstaden/crypto) package to generate a key exchange.
 
-## Client CLI
+## Client Unsecure
+
+```shell
+export RELAY_URL=ws://localhost:8080
+
+./bin/ncli event -note "xyz"
+```
+
+## Client Secure
 
 - Test with Damus relay
 

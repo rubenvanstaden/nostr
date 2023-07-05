@@ -1,35 +1,54 @@
 package main
 
 import (
-	//"crypto/tls"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
-
-	//"crypto/x509"
 	"io"
-
-	//"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/gorilla/websocket"
-	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/env"
 	"github.com/rubenvanstaden/nostr/core"
 )
 
-var addr = flag.String("relay", "", "relay websocket address")
-
 var (
-	RELAY_CERT  = env.String("RELAY_CERT")
+	RELAY_URL  = env.String("RELAY_URL")
 	PRIVATE_KEY = env.String("NSEC")
 	PUBLIC_KEY  = env.String("NPUB")
 )
+
+type Runner interface {
+	Init([]string) error
+	Run() error
+	Name() string
+}
+
+func root(args []string, cc *websocket.Conn) error {
+	if len(args) < 1 {
+		return errors.New("you must pass a sub-command")
+	}
+
+	cmds := []Runner{
+		NewEvent(cc),
+	}
+
+	subcommand := os.Args[1]
+
+	for _, cmd := range cmds {
+		if cmd.Name() == subcommand {
+			cmd.Init(os.Args[2:])
+			return cmd.Run()
+		}
+	}
+
+	return fmt.Errorf("unknown subcommand: %s", subcommand)
+}
 
 func parseFilters(filename string, filters *core.Filters) {
 
@@ -58,130 +77,11 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	args := flag.Args()
-
-	if *addr == "" {
-		log.Fatal("Missing required --relay parameter")
-	}
-
-	subId := ""
-	note := ""
-	var filters core.Filters
-
-	if len(args) > 0 {
-		if args[0] == "req" && len(args) > 1 {
-			subId = args[1]
-			parseFilters(args[2], &filters)
-		} else if args[0] == "note" && len(args) > 1 {
-			note = strings.Join(args[1:], " ")
-		}
-	}
-
 	// Connect to WebSocket server
-	u := url.URL{Scheme: "ws", Host: *addr, Path: ""}
-	log.Printf("connecting to %s", u.String())
-
+	u := url.URL{Scheme: "ws", Host: RELAY_URL, Path: ""}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial: ", err)
-	}
-	defer c.Close()
-
-	// 	// Load our CA certificate
-	// 	pemCerts, err := ioutil.ReadFile(RELAY_CERT)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	caCertPool := x509.NewCertPool()
-	// 	if !caCertPool.AppendCertsFromPEM(pemCerts) {
-	// 		log.Fatal("Couldn't append certs")
-	// 	}
-	// 	// Setup HTTPS client
-	// 	tlsConfig := &tls.Config{
-	// 		RootCAs: caCertPool,
-	// 	}
-	// 	tlsConfig.BuildNameToCertificate()
-	// 	// Connect to WebSocket server
-	// 	u := url.URL{Scheme: "wss", Host: *addr, Path: "/wss"}
-	// 	log.Printf("connecting to %s", u.String())
-	// 	// Configure our dialer to use our custom HTTP client
-	// 	d := websocket.Dialer{
-	// 		TLSClientConfig: tlsConfig,
-	// 	}
-	// 	// Connect to the WebSocket server
-	// 	c, _, err := d.Dial(u.String(), nil)
-	// 	if err != nil {
-	// 		log.Fatal("dial:", err)
-	// 	}
-	// 	defer c.Close()
-
-	if subId != "" {
-
-		var req core.MessageReq
-		req.SubscriptionId = subId
-		req.Filters = filters
-
-		// Marshal to a slice of bytes ready for transmission.
-		msg, err := json.Marshal(req)
-		if err != nil {
-			log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
-		}
-
-		log.Printf("REQ message: %#v", string(msg))
-
-		// Transmit event message to the spoke that connects to the relays.
-		err = c.WriteMessage(websocket.TextMessage, msg)
-		if err != nil {
-			log.Println("write:", err)
-			return
-		}
-	}
-
-	// If "post" command was used, send a message
-	if note != "" {
-
-		var msgEvent core.MessageEvent
-
-		msgEvent.Kind = 1
-
-		msgEvent.Tags = nil
-
-		// The note is created now.
-		msgEvent.CreatedAt = core.Now()
-
-		// The user note that should be trimmed properly.
-		msgEvent.Content = note
-
-		// Apply NIP-19 to decode user-friendly secrets.
-		var sk string
-		if _, s, e := crypto.DecodeBech32(PRIVATE_KEY); e == nil {
-			sk = s.(string)
-		}
-		if pub, e := crypto.GetPublicKey(sk); e == nil {
-			// Set public with which the event wat pushed.
-			msgEvent.PubKey = pub
-			if npub, e := crypto.EncodePublicKey(pub); e == nil {
-				fmt.Fprintln(os.Stderr, "using:", npub)
-			}
-		}
-
-		// We have to sign last, since the signature is dependent on the event content.
-		msgEvent.Sign(sk)
-
-		// Marshal the signed event to a slice of bytes ready for transmission.
-		msg, err := json.Marshal(msgEvent)
-		if err != nil {
-			log.Fatalln("unable to marchal incoming event")
-		}
-
-		log.Printf("\nNote Published - %s", msg)
-
-		// Transmit event message to the spoke that connects to the relays.
-		err = c.WriteMessage(websocket.TextMessage, msg)
-		if err != nil {
-			log.Fatalln(err)
-			return
-		}
 	}
 
 	// Streaming reponses from the connected relay.
@@ -193,7 +93,6 @@ func main() {
 				log.Fatalln(err)
 				return
 			}
-
 			msg := core.DecodeMessage(raw)
 			switch msg.Type() {
 			case "EVENT":
@@ -201,12 +100,19 @@ func main() {
 			case "REQ":
 				log.Printf("\n[Relay Response] REQ - %v", msg)
 			case "OK":
-				log.Printf("\n[Relay Response] OK - %v", msg)
+                log.Printf("[\033[32m*\033[0m] Relay - (status: OK)")
 			default:
 				log.Fatalln("unknown message type from RELAY")
 			}
 		}
 	}()
+
+    // Parse CLI commands and process events
+	err = root(os.Args[1:], c)
+    if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	// Wait for SIGINT (Ctrl+C)
 	interrupt := make(chan os.Signal, 1)

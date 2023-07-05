@@ -79,8 +79,6 @@ func (s Event) Serialize() []byte {
 
 func (s *Event) Sign(key string) error {
 
-	log.Printf("signing event with key: %s", key)
-
 	bytes, err := hex.DecodeString(key)
 	if err != nil {
 		log.Fatalf("unable to decode secret: %v", err)
@@ -104,7 +102,7 @@ func (s *Event) Sign(key string) error {
 	s.Id = hex.EncodeToString(h[:])
 	s.Sig = hex.EncodeToString(sig.Serialize())
 
-	log.Printf("event signed with ID: %s", s.Id)
+    log.Printf("\n[\033[32m*\033[0m] Client - Event signed with SK: %s", key[:10])
 
 	return nil
 }
