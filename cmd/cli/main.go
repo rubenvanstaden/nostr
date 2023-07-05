@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	RELAY_URL  = env.String("RELAY_URL")
+	RELAY_URL   = env.String("RELAY_URL")
 	PRIVATE_KEY = env.String("NSEC")
 	PUBLIC_KEY  = env.String("NPUB")
 )
@@ -29,13 +29,23 @@ type Runner interface {
 	Name() string
 }
 
-func root(args []string, cc *websocket.Conn) error {
+type Connection struct {
+
+	// Web socket connection between client and relay.
+	socket *websocket.Conn
+
+	// Counter for subscriptions
+	counter int
+}
+
+func root(args []string, cc *Connection) error {
 	if len(args) < 1 {
 		return errors.New("you must pass a sub-command")
 	}
 
 	cmds := []Runner{
 		NewEvent(cc),
+		NewFollow(cc),
 	}
 
 	subcommand := os.Args[1]
@@ -96,20 +106,28 @@ func main() {
 			msg := core.DecodeMessage(raw)
 			switch msg.Type() {
 			case "EVENT":
-				log.Printf("\n[Relay Response] EVENT - %v", msg)
+				event := msg.(*core.MessageEvent)
+				log.Println("[\033[32m*\033[0m] Relay")
+				log.Printf("  CreatedAt: %d", event.CreatedAt)
+				log.Printf("  Content: %s", event.Content)
 			case "REQ":
 				log.Printf("\n[Relay Response] REQ - %v", msg)
 			case "OK":
-                log.Printf("[\033[32m*\033[0m] Relay - (status: OK)")
+				log.Printf("[\033[32m*\033[0m] Relay - (status: OK)")
 			default:
 				log.Fatalln("unknown message type from RELAY")
 			}
 		}
 	}()
 
-    // Parse CLI commands and process events
-	err = root(os.Args[1:], c)
-    if err != nil {
+	cc := &Connection{
+		socket:  c,
+		counter: 0,
+	}
+
+	// Parse CLI commands and process events
+	err = root(os.Args[1:], cc)
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

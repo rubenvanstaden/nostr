@@ -12,11 +12,11 @@ import (
 	"github.com/rubenvanstaden/nostr/core"
 )
 
-func NewEvent(cc *websocket.Conn) *Event {
+func NewEvent(cc *Connection) *Event {
 
 	gc := &Event{
 		fs: flag.NewFlagSet("event", flag.ContinueOnError),
-        cc: cc,
+		cc: cc,
 	}
 
 	gc.fs.StringVar(&gc.note, "note", "", "event text note of Kind 1")
@@ -28,11 +28,11 @@ func NewEvent(cc *websocket.Conn) *Event {
 
 type Event struct {
 	fs *flag.FlagSet
-    cc *websocket.Conn
+	cc *Connection
 
-	note string
-    metadata string
-    recommend string
+	note      string
+	metadata  string
+	recommend string
 }
 
 func (g *Event) Name() string {
@@ -45,63 +45,63 @@ func (g *Event) Init(args []string) error {
 
 func (s *Event) Run() error {
 
-    if s.note != "" {
-        s.publish(s.note)
-    }
+	if s.note != "" {
+		s.publish(s.note)
+	}
 
-    if s.metadata != "" {
-        log.Fatalln("[metadata] not implemented")
-    }
+	if s.metadata != "" {
+		log.Fatalln("[metadata] not implemented")
+	}
 
-    if s.recommend != "" {
-        log.Fatalln("[recommend] not implemented")
-    }
+	if s.recommend != "" {
+		log.Fatalln("[recommend] not implemented")
+	}
 
 	return nil
 }
 
 func (s *Event) publish(content string) error {
-    var msgEvent core.MessageEvent
+	var msgEvent core.MessageEvent
 
-    msgEvent.Kind = 1
+	msgEvent.Kind = 1
 
-    msgEvent.Tags = nil
+	msgEvent.Tags = nil
 
-    // The note is created now.
-    msgEvent.CreatedAt = core.Now()
+	// The note is created now.
+	msgEvent.CreatedAt = core.Now()
 
-    // The user note that should be trimmed properly.
-    msgEvent.Content = content
+	// The user note that should be trimmed properly.
+	msgEvent.Content = content
 
-    // Apply NIP-19 to decode user-friendly secrets.
-    var sk string
-    if _, s, e := crypto.DecodeBech32(PRIVATE_KEY); e == nil {
-        sk = s.(string)
-    }
-    if pub, e := crypto.GetPublicKey(sk); e == nil {
-        // Set public with which the event wat pushed.
-        msgEvent.PubKey = pub
-        if npub, e := crypto.EncodePublicKey(pub); e == nil {
-            fmt.Fprintln(os.Stderr, "using:", npub)
-        }
-    }
+	// Apply NIP-19 to decode user-friendly secrets.
+	var sk string
+	if _, s, e := crypto.DecodeBech32(PRIVATE_KEY); e == nil {
+		sk = s.(string)
+	}
+	if pub, e := crypto.GetPublicKey(sk); e == nil {
+		// Set public with which the event wat pushed.
+		msgEvent.PubKey = pub
+		if npub, e := crypto.EncodePublicKey(pub); e == nil {
+			fmt.Fprintln(os.Stderr, "using:", npub)
+		}
+	}
 
-    // We have to sign last, since the signature is dependent on the event content.
-    msgEvent.Sign(sk)
+	// We have to sign last, since the signature is dependent on the event content.
+	msgEvent.Sign(sk)
 
-    // Marshal the signed event to a slice of bytes ready for transmission.
-    msg, err := json.Marshal(msgEvent)
-    if err != nil {
-        log.Fatalln("unable to marchal incoming event")
-    }
+	// Marshal the signed event to a slice of bytes ready for transmission.
+	msg, err := json.Marshal(msgEvent)
+	if err != nil {
+		log.Fatalln("unable to marchal incoming event")
+	}
 
-    log.Printf("[\033[32m*\033[0m] Client - Event published (id: %s...)", msgEvent.Id[:10])
+	log.Printf("[\033[32m*\033[0m] Client - Event published (id: %s...)", msgEvent.Id[:10])
 
-    // Transmit event message to the spoke that connects to the relays.
-    err = s.cc.WriteMessage(websocket.TextMessage, msg)
-    if err != nil {
-        return err
-    }
+	// Transmit event message to the spoke that connects to the relays.
+	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }

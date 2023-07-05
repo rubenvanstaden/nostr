@@ -11,11 +11,10 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 )
 
-type Kind uint32
-
 const (
-	KindSetMetadata Kind = 0
-	KindTextNote    Kind = 1
+	KindSetMetadata     uint32 = 0
+	KindTextNote        uint32 = 1
+	KindRecommendServer uint32 = 2
 )
 
 type Event struct {
@@ -102,7 +101,7 @@ func (s *Event) Sign(key string) error {
 	s.Id = hex.EncodeToString(h[:])
 	s.Sig = hex.EncodeToString(sig.Serialize())
 
-    log.Printf("\n[\033[32m*\033[0m] Client - Event signed with SK: %s", key[:10])
+	log.Printf("\n[\033[32m*\033[0m] Client - Event signed with SK: %s", key[:10])
 
 	return nil
 }
