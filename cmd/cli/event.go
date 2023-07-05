@@ -63,7 +63,7 @@ func (s *Event) Run() error {
 func (s *Event) publish(content string) error {
 	var msgEvent core.MessageEvent
 
-	msgEvent.Kind = 1
+	msgEvent.Kind = core.KindTextNote
 
 	msgEvent.Tags = nil
 
@@ -95,7 +95,8 @@ func (s *Event) publish(content string) error {
 		log.Fatalln("unable to marchal incoming event")
 	}
 
-	log.Printf("[\033[32m*\033[0m] Client - Event published (id: %s...)", msgEvent.Id[:10])
+	log.Printf("[\033[32m*\033[0m] Client")
+	log.Printf("  Event published (id: %s...)", msgEvent.Id[:10])
 
 	// Transmit event message to the spoke that connects to the relays.
 	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)

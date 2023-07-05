@@ -44,7 +44,7 @@ func root(args []string, cc *Connection) error {
 	}
 
 	cmds := []Runner{
-        NewProfile(cc),
+		NewProfile(cc),
 		NewEvent(cc),
 		NewFollow(cc),
 	}
@@ -108,9 +108,21 @@ func main() {
 			switch msg.Type() {
 			case "EVENT":
 				event := msg.(*core.MessageEvent)
-				log.Println("[\033[32m*\033[0m] Relay")
-				log.Printf("  CreatedAt: %d", event.CreatedAt)
-				log.Printf("  Content: %s", event.Content)
+				switch event.Kind {
+				case core.KindTextNote:
+					log.Println("[\033[32m*\033[0m] Relay")
+					log.Printf("  CreatedAt: %d", event.CreatedAt)
+					log.Printf("  Content: %s", event.Content)
+				case core.KindSetMetadata:
+					log.Println("[\033[32m*\033[0m] Relay")
+					p, err := core.ParseMetadata(event.Event)
+					if err != nil {
+						log.Fatalf("unable to pull profile: %#v", err)
+					}
+					log.Printf("  name: %s", p.Name)
+					log.Printf("  about: %s", p.About)
+					log.Printf("  picture: %s", p.Picture)
+				}
 			case "REQ":
 				log.Printf("\n[Relay Response] REQ - %v", msg)
 			case "OK":

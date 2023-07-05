@@ -69,6 +69,8 @@ func (s *Follow) subscribe(npub string) error {
 
 	f := core.Filter{
 		Authors: []string{pk.(string)},
+		Kinds:   []uint32{core.KindTextNote},
+		Limit:   5,
 	}
 
 	var req core.MessageReq

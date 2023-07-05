@@ -7,9 +7,9 @@ import (
 )
 
 type Profile struct {
-	Name        string `json:"name,omitempty"`
-	About       string `json:"about,omitempty"`
-	Picture     string `json:"picture,omitempty"`
+	Name    string `json:"name,omitempty"`
+	About   string `json:"about,omitempty"`
+	Picture string `json:"picture,omitempty"`
 }
 
 func (s Profile) String() string {
@@ -27,7 +27,7 @@ func ParseMetadata(e Event) (*Profile, error) {
 	}
 
 	var profile Profile
-    err := json.Unmarshal([]byte(e.Content), &profile)
+	err := json.Unmarshal([]byte(e.Content), &profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse metadata from event %s: %w", e.Id, err)
 	}

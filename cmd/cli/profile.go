@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
@@ -19,6 +20,7 @@ func NewProfile(cc *Connection) *Profile {
 		cc: cc,
 	}
 
+	gc.fs.BoolVar(&gc.ls, "ls", false, "event text note of Kind 1")
 	gc.fs.StringVar(&gc.name, "name", "", "event text note of Kind 1")
 	gc.fs.StringVar(&gc.about, "about", "", "event text note of Kind 0")
 	gc.fs.StringVar(&gc.picture, "picture", "", "event text note of Kind 2")
@@ -30,8 +32,9 @@ type Profile struct {
 	fs *flag.FlagSet
 	cc *Connection
 
-	name      string
-	about  string
+	ls      bool
+	name    string
+	about   string
 	picture string
 }
 
@@ -45,40 +48,36 @@ func (g *Profile) Init(args []string) error {
 
 func (s *Profile) Run() error {
 
-	if s.name != "" {
-		s.update(s.name)
+	if s.ls {
+		s.show(PUBLIC_KEY)
 	}
 
-	if s.about != "" {
-		log.Fatalln("[about] not implemented")
-	}
-
-	if s.picture != "" {
-		log.Fatalln("[picture] not implemented")
+	if s.name != "" && s.about != "" && s.picture != "" {
+		s.update(s.name, s.about, s.picture)
 	}
 
 	return nil
 }
 
 // FIXME: Pull latest profile and update the diff.
-func (s *Profile) update(name string) error {
+func (s *Profile) update(name, about, picture string) error {
 
 	var event core.MessageEvent
 
-    // This is a metadata event type.
+	// This is a metadata event type.
 	event.Kind = core.KindSetMetadata
 
-    // Tags not implemented
+	// Tags not implemented
 	event.Tags = nil
 
 	// The note is created now.
 	event.CreatedAt = core.Now()
 
-    p := core.Profile{
-        Name: name,
-        About: "",
-        Picture: "",
-    }
+	p := core.Profile{
+		Name:    name,
+		About:   about,
+		Picture: picture,
+	}
 
 	// The user note that should be trimmed properly.
 	event.Content = p.String()
@@ -105,8 +104,47 @@ func (s *Profile) update(name string) error {
 		log.Fatalln("unable to marchal incoming event")
 	}
 
-	log.Printf("[\033[32m*\033[0m] Client")
-	log.Printf("  Profile updated (name: %s)", name)
+	log.Printf("[\033[32m*\033[0m] client")
+	log.Printf("  request to update profile")
+	log.Printf("    - name: %s", name)
+	log.Printf("    - about: %s", about)
+	log.Printf("    - picture: %s", picture)
+
+	// Transmit event message to the spoke that connects to the relays.
+	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Publich a REQ to relay to return and EVENT of Kind 0.
+func (s *Profile) show(npub string) error {
+
+	// Decode npub using NIP-19
+	_, pk, err := crypto.DecodeBech32(npub)
+	if err != nil {
+		log.Fatalf("\nunable to decode npub: %#v", err)
+	}
+
+	f := core.Filter{
+		Authors: []string{pk.(string)},
+		Kinds:   []uint32{core.KindSetMetadata},
+	}
+
+	var req core.MessageReq
+	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.cc.counter)
+	req.Filters = core.Filters{f}
+
+	// Marshal to a slice of bytes ready for transmission.
+	msg, err := json.Marshal(req)
+	if err != nil {
+		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
+	}
+
+	log.Printf("[\033[32m*\033[0m] client")
+	log.Printf("  request to show user profile (npub: %s...)", npub[:10])
 
 	// Transmit event message to the spoke that connects to the relays.
 	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
