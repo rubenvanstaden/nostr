@@ -79,26 +79,19 @@ func (s *Profile) Run() error {
 		s.cfg.Encode()
 	}
 
+	// Commit event to relays to update profile.
 	if s.commit {
-		s.publish()
-	}
-
-	return nil
-}
-
-func (s *Profile) publish() error {
-
-	e := core.Event{
-		Kind:      core.KindSetMetadata,
-		Tags:      nil,
-		CreatedAt: core.Now(),
-		Content:   s.cfg.Profile.String(),
-	}
-
-	status, err := s.cc.Publish(e)
-	log.Printf("Profile commit status: %s", status)
-	if err != nil {
-		return err
+		e := core.Event{
+			Kind:      core.KindSetMetadata,
+			Tags:      nil,
+			CreatedAt: core.Now(),
+			Content:   s.cfg.Profile.String(),
+		}
+		status, err := s.cc.Publish(e)
+		log.Printf("Profile commit status: %s", status)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

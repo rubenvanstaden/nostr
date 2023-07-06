@@ -91,6 +91,11 @@ func (s *Connection) Publish(ev core.Event) (core.Status, error) {
 	return core.StatusOK, nil
 }
 
+func (s *Connection) Request(ev core.Event) (core.Status, error) {
+
+	return core.StatusOK, nil
+}
+
 func (s *Connection) Close() {
 	// Disconnect from the WebSocket server
 	err := s.socket.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
