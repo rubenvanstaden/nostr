@@ -20,7 +20,6 @@ func NewEvent(cc *Connection) *Event {
 	}
 
 	gc.fs.StringVar(&gc.note, "note", "", "event text note of Kind 1")
-	gc.fs.StringVar(&gc.metadata, "metadata", "", "event text note of Kind 0")
 	gc.fs.StringVar(&gc.recommend, "recommend", "", "event text note of Kind 2")
 
 	return gc
@@ -31,7 +30,6 @@ type Event struct {
 	cc *Connection
 
 	note      string
-	metadata  string
 	recommend string
 }
 
@@ -47,10 +45,6 @@ func (s *Event) Run() error {
 
 	if s.note != "" {
 		s.publish(s.note)
-	}
-
-	if s.metadata != "" {
-		log.Fatalln("[metadata] not implemented")
 	}
 
 	if s.recommend != "" {

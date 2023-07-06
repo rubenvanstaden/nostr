@@ -18,9 +18,9 @@ func NewFollow(cc *Connection) *Follow {
 		cc: cc,
 	}
 
-	gc.fs.StringVar(&gc.ls, "ls", "", "event text note of Kind 1")
-	gc.fs.StringVar(&gc.add, "add", "", "event text note of Kind 0")
-	gc.fs.StringVar(&gc.remove, "remove", "", "event text note of Kind 2")
+	gc.fs.StringVar(&gc.ls, "ls", "", "list all following users")
+	gc.fs.StringVar(&gc.add, "add", "", "user public key to add to following list")
+	gc.fs.StringVar(&gc.remove, "remove", "", "remove user via public key")
 
 	return gc
 }
@@ -83,7 +83,8 @@ func (s *Follow) subscribe(npub string) error {
 		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
 	}
 
-	log.Printf("[\033[32m*\033[0m] Client - Request to follow (npub: %s...)", npub[:10])
+	log.Printf("[\033[32m*\033[0m] Client")
+	log.Printf("  request to follow (npub: %s...)", npub[:10])
 
 	// Transmit event message to the spoke that connects to the relays.
 	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)

@@ -21,6 +21,7 @@ var (
 	RELAY_URL   = env.String("RELAY_URL")
 	PRIVATE_KEY = env.String("NSEC")
 	PUBLIC_KEY  = env.String("NPUB")
+	CONFIG_PATH = env.String("CONFIG_PATH")
 )
 
 type Runner interface {
@@ -87,6 +88,11 @@ func main() {
 
 	flag.Parse()
 	log.SetFlags(0)
+
+	config, err := core.DecodeConfig(CONFIG_PATH)
+	if err != nil {
+		log.Fatalf("unable to decode local config: %v", err)
+	}
 
 	// Connect to WebSocket server
 	u := url.URL{Scheme: "ws", Host: RELAY_URL, Path: ""}

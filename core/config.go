@@ -1,0 +1,65 @@
+package core
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+)
+
+type Config struct {
+	Path       string                `json:"path"`
+	Profile    map[string]string     `json:"profile"`
+	Relays     map[string]Permission `json:"relays,omitempty"`
+	Following  map[string]Follow     `json:"following,omitempty"`
+	PrivateKey string                `json:"privatekey,omitempty"`
+}
+
+type Permission string
+
+type Follow struct {
+	PublicKey string `json:"key"`
+	Name      string `json:"name,omitempty"`
+}
+
+func DecodeConfig(path string) (*Config, error) {
+
+	// Open the file
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Decode the file
+	var config Config
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Path == "" {
+		config.Path = path
+	}
+
+	return &config, nil
+}
+
+func (s *Config) Commit() {
+
+	// Open the file
+	file, err := os.OpenFile(s.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		fmt.Println("error opening file:", err)
+		return
+	}
+	defer file.Close()
+
+	// Encode the new data
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(&s)
+	if err != nil {
+		fmt.Println("error encoding JSON:", err)
+		return
+	}
+}
