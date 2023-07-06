@@ -7,14 +7,13 @@ import (
 )
 
 type Config struct {
-	Path       string                `json:"path"`
-	Profile    map[string]string     `json:"profile"`
-	Relays     map[string]Permission `json:"relays,omitempty"`
-	Following  map[string]Follow     `json:"following,omitempty"`
-	PrivateKey string                `json:"privatekey,omitempty"`
+	Path       string            `json:"path"`
+	PublicKey  string            `json:"publickey,omitempty"`
+	PrivateKey string            `json:"privatekey,omitempty"`
+	Profile    Profile           `json:"profile"`
+	Relays     []string          `json:"relays,omitempty"`
+	Following  map[string]Follow `json:"following,omitempty"`
 }
-
-type Permission string
 
 type Follow struct {
 	PublicKey string `json:"key"`
@@ -45,7 +44,7 @@ func DecodeConfig(path string) (*Config, error) {
 	return &config, nil
 }
 
-func (s *Config) Commit() {
+func (s *Config) Encode() {
 
 	// Open the file
 	file, err := os.OpenFile(s.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)

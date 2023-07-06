@@ -13,29 +13,43 @@ import (
 	"github.com/rubenvanstaden/nostr/core"
 )
 
-func NewProfile(cc *Connection) *Profile {
+func NewProfile(cfg *core.Config, cc *Connection) *Profile {
 
 	gc := &Profile{
-		fs: flag.NewFlagSet("profile", flag.ContinueOnError),
-		cc: cc,
+		fs:  flag.NewFlagSet("profile", flag.ContinueOnError),
+		cfg: cfg,
+		cc:  cc,
 	}
 
-	gc.fs.BoolVar(&gc.ls, "ls", false, "event text note of Kind 1")
 	gc.fs.StringVar(&gc.name, "name", "", "event text note of Kind 1")
 	gc.fs.StringVar(&gc.about, "about", "", "event text note of Kind 0")
 	gc.fs.StringVar(&gc.picture, "picture", "", "event text note of Kind 2")
+
+	gc.fs.BoolVar(&gc.show, "show", false, "event text note of Kind 1")
+	gc.fs.BoolVar(&gc.commit, "commit", false, "event text note of Kind 1")
 
 	return gc
 }
 
 type Profile struct {
-	fs *flag.FlagSet
-	cc *Connection
+	fs  *flag.FlagSet
+	cfg *core.Config
+	cc  *Connection
 
-	ls      bool
-	name    string
-	about   string
+	// Change the name field in profile.
+	name string
+
+	// Change the name about in profile.
+	about string
+
+	// Change the name picture of profile
 	picture string
+
+	// Show the current state of local profile.
+	show bool
+
+	// Commit profile to relays in listed in config.
+	commit bool
 }
 
 func (g *Profile) Name() string {
@@ -48,19 +62,33 @@ func (g *Profile) Init(args []string) error {
 
 func (s *Profile) Run() error {
 
-	if s.ls {
-		s.show(PUBLIC_KEY)
+	if s.show {
+		s.view()
 	}
 
-	if s.name != "" && s.about != "" && s.picture != "" {
-		s.update(s.name, s.about, s.picture)
+	if s.name != "" {
+		s.cfg.Profile.Name = s.name
+		s.cfg.Encode()
+	}
+
+	if s.about != "" {
+		s.cfg.Profile.About = s.about
+		s.cfg.Encode()
+	}
+
+	if s.picture != "" {
+		s.cfg.Profile.Picture = s.picture
+		s.cfg.Encode()
+	}
+
+	if s.commit {
+		s.publish()
 	}
 
 	return nil
 }
 
-// FIXME: Pull latest profile and update the diff.
-func (s *Profile) update(name, about, picture string) error {
+func (s *Profile) publish() error {
 
 	var event core.MessageEvent
 
@@ -73,14 +101,8 @@ func (s *Profile) update(name, about, picture string) error {
 	// The note is created now.
 	event.CreatedAt = core.Now()
 
-	p := core.Profile{
-		Name:    name,
-		About:   about,
-		Picture: picture,
-	}
-
 	// The user note that should be trimmed properly.
-	event.Content = p.String()
+	event.Content = s.cfg.Profile.String()
 
 	// Apply NIP-19 to decode user-friendly secrets.
 	var sk string
@@ -106,9 +128,9 @@ func (s *Profile) update(name, about, picture string) error {
 
 	log.Printf("[\033[32m*\033[0m] client")
 	log.Printf("  request to update profile")
-	log.Printf("    - name: %s", name)
-	log.Printf("    - about: %s", about)
-	log.Printf("    - picture: %s", picture)
+	log.Printf("    - name: %s", s.cfg.Profile.Name)
+	log.Printf("    - about: %s", s.cfg.Profile.About)
+	log.Printf("    - picture: %s", s.cfg.Profile.Picture)
 
 	// Transmit event message to the spoke that connects to the relays.
 	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
@@ -119,8 +141,21 @@ func (s *Profile) update(name, about, picture string) error {
 	return nil
 }
 
+// View the current state of the profile as defined in CONFIG_PATH
+func (s *Profile) view() error {
+
+	config, err := core.DecodeConfig(CONFIG_PATH)
+	if err != nil {
+		log.Fatalf("unable to decode local config: %v", err)
+	}
+
+	log.Printf("\n%#v\n", config)
+
+	return nil
+}
+
 // Publich a REQ to relay to return and EVENT of Kind 0.
-func (s *Profile) show(npub string) error {
+func (s *Profile) request(npub string) error {
 
 	// Decode npub using NIP-19
 	_, pk, err := crypto.DecodeBech32(npub)

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,7 +17,6 @@ import (
 )
 
 var (
-	RELAY_URL   = env.String("RELAY_URL")
 	PRIVATE_KEY = env.String("NSEC")
 	PUBLIC_KEY  = env.String("NPUB")
 	CONFIG_PATH = env.String("CONFIG_PATH")
@@ -39,13 +37,13 @@ type Connection struct {
 	counter int
 }
 
-func root(args []string, cc *Connection) error {
+func root(args []string, cfg *core.Config, cc *Connection) error {
 	if len(args) < 1 {
 		return errors.New("you must pass a sub-command")
 	}
 
 	cmds := []Runner{
-		NewProfile(cc),
+		NewProfile(cfg, cc),
 		NewEvent(cc),
 		NewFollow(cc),
 	}
@@ -89,14 +87,13 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	config, err := core.DecodeConfig(CONFIG_PATH)
+	cfg, err := core.DecodeConfig(CONFIG_PATH)
 	if err != nil {
-		log.Fatalf("unable to decode local config: %v", err)
+		log.Fatalf("unable to decode local cfg: %v", err)
 	}
 
 	// Connect to WebSocket server
-	u := url.URL{Scheme: "ws", Host: RELAY_URL, Path: ""}
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, _, err := websocket.DefaultDialer.Dial(cfg.Relays[0], nil)
 	if err != nil {
 		log.Fatal("dial: ", err)
 	}
@@ -148,7 +145,7 @@ func main() {
 	}
 
 	// Parse CLI commands and process events
-	err = root(os.Args[1:], cc)
+	err = root(os.Args[1:], cfg, cc)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
