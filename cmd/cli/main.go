@@ -32,6 +32,7 @@ func root(args []string, cfg *core.Config, cc *Connection) error {
 		NewProfile(cfg, cc),
 		NewEvent(cc),
 		NewFollow(cc),
+        NewRequest(cc),
 	}
 
 	subcommand := os.Args[1]

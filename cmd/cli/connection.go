@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -91,9 +92,56 @@ func (s *Connection) Publish(ev core.Event) (core.Status, error) {
 	return core.StatusOK, nil
 }
 
-func (s *Connection) Request(ev core.Event) (core.Status, error) {
+// TODO: Currently only returing a single events. Should be a stream
+func (s *Connection) Request(filters core.Filters) (*core.Event, error) {
 
-	return core.StatusOK, nil
+	var req core.MessageReq
+	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.counter)
+	req.Filters = filters
+
+	// Marshal to a slice of bytes ready for transmission.
+	msg, err := json.Marshal(req)
+	if err != nil {
+		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
+	}
+
+	// Transmit event message to the spoke that connects to the relays.
+	err = s.socket.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		return nil, err
+	}
+
+    // Block for a status response from relays
+    _, raw, err := s.socket.ReadMessage()
+    if err != nil {
+        log.Fatalln(err)
+    }
+    m := core.DecodeMessage(raw)
+    switch m.Type() {
+    case "EVENT":
+        event := m.(*core.MessageEvent)
+        switch event.Kind {
+        case core.KindTextNote:
+            log.Println("[\033[32m*\033[0m] Relay")
+            log.Printf("  CreatedAt: %d", event.CreatedAt)
+            log.Printf("  Content: %s", event.Content)
+            return &event.Event, nil
+        case core.KindSetMetadata:
+            log.Println("[\033[32m*\033[0m] Relay")
+            p, err := core.ParseMetadata(event.Event)
+            if err != nil {
+                log.Fatalf("unable to pull profile: %#v", err)
+            }
+            log.Printf("  name: %s", p.Name)
+            log.Printf("  about: %s", p.About)
+            log.Printf("  picture: %s", p.Picture)
+            return &event.Event, nil
+        }
+    default:
+        log.Fatalln("unknown message type from RELAY")
+    }
+
+	return nil, nil
 }
 
 func (s *Connection) Close() {

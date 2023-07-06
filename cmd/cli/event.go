@@ -48,7 +48,7 @@ func (s *Event) Run() error {
 
 		status, err := s.cc.Publish(e)
 		if status == core.StatusOK {
-			log.Printf("[\033[32m+\033[0m] Text note published: [status: %s]", status)
+			log.Printf("[\033[1;32m+\033[0m] Text note published: [status: %s]", status)
 		}
 		if err != nil {
 			return err
