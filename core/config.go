@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -56,9 +57,16 @@ func (s *Config) Encode() {
 
 	// Encode the new data
 	encoder := json.NewEncoder(file)
+
+    // Format: Pretty print to file.
+	encoder.SetIndent("", "  ")
+
+    // Write to file
 	err = encoder.Encode(&s)
 	if err != nil {
 		fmt.Println("error encoding JSON:", err)
 		return
 	}
+
+    log.Println("local config updated")
 }

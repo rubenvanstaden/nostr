@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"strconv"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
@@ -91,6 +92,51 @@ func (s *Follow) subscribe(npub string) error {
 	if err != nil {
 		return err
 	}
+
+	// Streaming reponses from the connected relay.
+
+    var wg sync.WaitGroup
+    wg.Add(1)
+	go func() {
+        defer wg.Done()
+		for {
+			_, raw, err := s.cc.socket.ReadMessage()
+			if err != nil {
+				log.Fatalln(err)
+				return
+			}
+			msg := core.DecodeMessage(raw)
+			switch msg.Type() {
+			case "EVENT":
+				event := msg.(*core.MessageEvent)
+				switch event.Kind {
+				case core.KindTextNote:
+					log.Println("[\033[32m*\033[0m] Relay")
+					log.Printf("  CreatedAt: %d", event.CreatedAt)
+					log.Printf("  Content: %s", event.Content)
+				case core.KindSetMetadata:
+					log.Println("[\033[32m*\033[0m] Relay")
+					p, err := core.ParseMetadata(event.Event)
+					if err != nil {
+						log.Fatalf("unable to pull profile: %#v", err)
+					}
+					log.Printf("  name: %s", p.Name)
+					log.Printf("  about: %s", p.About)
+					log.Printf("  picture: %s", p.Picture)
+				}
+			case "REQ":
+				log.Printf("\n[Relay Response] REQ - %v", msg)
+			case "OK":
+				e := msg.(*core.MessageResult)
+				log.Printf("[\033[32m*\033[0m] Relay")
+				log.Printf("  status: OK")
+				log.Printf("  message: %s", e.Message)
+			default:
+				log.Fatalln("unknown message type from RELAY")
+			}
+		}
+	}()
+    wg.Wait()
 
 	return nil
 }

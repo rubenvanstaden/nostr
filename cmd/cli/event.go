@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
@@ -75,9 +73,6 @@ func (s *Event) publish(content string) error {
 	if pub, e := crypto.GetPublicKey(sk); e == nil {
 		// Set public with which the event wat pushed.
 		msgEvent.PubKey = pub
-		if npub, e := crypto.EncodePublicKey(pub); e == nil {
-			fmt.Fprintln(os.Stderr, "using:", npub)
-		}
 	}
 
 	// We have to sign last, since the signature is dependent on the event content.

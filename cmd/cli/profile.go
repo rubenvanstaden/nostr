@@ -3,10 +3,9 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
-	"os"
 	"strconv"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
@@ -112,9 +111,6 @@ func (s *Profile) publish() error {
 	if pub, e := crypto.GetPublicKey(sk); e == nil {
 		// Set public with which the event wat pushed.
 		event.PubKey = pub
-		if npub, e := crypto.EncodePublicKey(pub); e == nil {
-			fmt.Fprintln(os.Stderr, "using:", npub)
-		}
 	}
 
 	// We have to sign last, since the signature is dependent on the event content.
@@ -137,6 +133,34 @@ func (s *Profile) publish() error {
 	if err != nil {
 		return err
 	}
+
+    // Streaming reponses from the connected relay.
+    // Wait till be get the OK from all relays.
+    var wg sync.WaitGroup
+    wg.Add(1)
+	go func() {
+        defer wg.Done()
+		for {
+			_, raw, err := s.cc.socket.ReadMessage()
+			if err != nil {
+				log.Fatalln(err)
+				return
+			}
+			msg := core.DecodeMessage(raw)
+			switch msg.Type() {
+			case "OK":
+				e := msg.(*core.MessageResult)
+				log.Printf("[\033[32m*\033[0m] Relay")
+				log.Printf("  status: OK")
+				log.Printf("  message: %s", e.Message)
+                return
+			default:
+				log.Fatalln("unknown message type from RELAY")
+                return
+			}
+		}
+	}()
+    wg.Wait()
 
 	return nil
 }

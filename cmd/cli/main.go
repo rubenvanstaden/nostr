@@ -8,8 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/env"
@@ -98,47 +96,6 @@ func main() {
 		log.Fatal("dial: ", err)
 	}
 
-	// Streaming reponses from the connected relay.
-	go func() {
-		defer c.Close()
-		for {
-			_, raw, err := c.ReadMessage()
-			if err != nil {
-				log.Fatalln(err)
-				return
-			}
-			msg := core.DecodeMessage(raw)
-			switch msg.Type() {
-			case "EVENT":
-				event := msg.(*core.MessageEvent)
-				switch event.Kind {
-				case core.KindTextNote:
-					log.Println("[\033[32m*\033[0m] Relay")
-					log.Printf("  CreatedAt: %d", event.CreatedAt)
-					log.Printf("  Content: %s", event.Content)
-				case core.KindSetMetadata:
-					log.Println("[\033[32m*\033[0m] Relay")
-					p, err := core.ParseMetadata(event.Event)
-					if err != nil {
-						log.Fatalf("unable to pull profile: %#v", err)
-					}
-					log.Printf("  name: %s", p.Name)
-					log.Printf("  about: %s", p.About)
-					log.Printf("  picture: %s", p.Picture)
-				}
-			case "REQ":
-				log.Printf("\n[Relay Response] REQ - %v", msg)
-			case "OK":
-				e := msg.(*core.MessageResult)
-				log.Printf("[\033[32m*\033[0m] Relay")
-				log.Printf("  status: OK")
-				log.Printf("  message: %s", e.Message)
-			default:
-				log.Fatalln("unknown message type from RELAY")
-			}
-		}
-	}()
-
 	cc := &Connection{
 		socket:  c,
 		counter: 0,
@@ -151,14 +108,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Wait for SIGINT (Ctrl+C)
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	<-interrupt
-
 	// Disconnect from the WebSocket server
-	log.Println("disconnecting from server")
 	err = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		log.Println("write close:", err)
