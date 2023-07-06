@@ -5,7 +5,6 @@ import (
 	"flag"
 	"log"
 	"strconv"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
@@ -89,78 +88,18 @@ func (s *Profile) Run() error {
 
 func (s *Profile) publish() error {
 
-	var event core.MessageEvent
-
-	// This is a metadata event type.
-	event.Kind = core.KindSetMetadata
-
-	// Tags not implemented
-	event.Tags = nil
-
-	// The note is created now.
-	event.CreatedAt = core.Now()
-
-	// The user note that should be trimmed properly.
-	event.Content = s.cfg.Profile.String()
-
-	// Apply NIP-19 to decode user-friendly secrets.
-	var sk string
-	if _, s, e := crypto.DecodeBech32(PRIVATE_KEY); e == nil {
-		sk = s.(string)
-	}
-	if pub, e := crypto.GetPublicKey(sk); e == nil {
-		// Set public with which the event wat pushed.
-		event.PubKey = pub
+	e := core.Event{
+		Kind:      core.KindSetMetadata,
+		Tags:      nil,
+		CreatedAt: core.Now(),
+		Content:   s.cfg.Profile.String(),
 	}
 
-	// We have to sign last, since the signature is dependent on the event content.
-	event.Sign(sk)
-
-	// Marshal the signed event to a slice of bytes ready for transmission.
-	msg, err := json.Marshal(event)
-	if err != nil {
-		log.Fatalln("unable to marchal incoming event")
-	}
-
-	log.Printf("[\033[32m*\033[0m] client")
-	log.Printf("  request to update profile")
-	log.Printf("    - name: %s", s.cfg.Profile.Name)
-	log.Printf("    - about: %s", s.cfg.Profile.About)
-	log.Printf("    - picture: %s", s.cfg.Profile.Picture)
-
-	// Transmit event message to the spoke that connects to the relays.
-	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
+	status, err := s.cc.Publish(e)
+	log.Printf("Profile commit status: %s", status)
 	if err != nil {
 		return err
 	}
-
-    // Streaming reponses from the connected relay.
-    // Wait till be get the OK from all relays.
-    var wg sync.WaitGroup
-    wg.Add(1)
-	go func() {
-        defer wg.Done()
-		for {
-			_, raw, err := s.cc.socket.ReadMessage()
-			if err != nil {
-				log.Fatalln(err)
-				return
-			}
-			msg := core.DecodeMessage(raw)
-			switch msg.Type() {
-			case "OK":
-				e := msg.(*core.MessageResult)
-				log.Printf("[\033[32m*\033[0m] Relay")
-				log.Printf("  status: OK")
-				log.Printf("  message: %s", e.Message)
-                return
-			default:
-				log.Fatalln("unknown message type from RELAY")
-                return
-			}
-		}
-	}()
-    wg.Wait()
 
 	return nil
 }

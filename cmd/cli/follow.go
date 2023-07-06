@@ -95,10 +95,10 @@ func (s *Follow) subscribe(npub string) error {
 
 	// Streaming reponses from the connected relay.
 
-    var wg sync.WaitGroup
-    wg.Add(1)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-        defer wg.Done()
+		defer wg.Done()
 		for {
 			_, raw, err := s.cc.socket.ReadMessage()
 			if err != nil {
@@ -136,7 +136,7 @@ func (s *Follow) subscribe(npub string) error {
 			}
 		}
 	}()
-    wg.Wait()
+	wg.Wait()
 
 	return nil
 }

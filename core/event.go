@@ -11,6 +11,13 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 )
 
+type Status string
+
+const (
+	StatusOK   Status = "OK"
+	StatusFail Status = "FAIL"
+)
+
 const (
 	KindSetMetadata     uint32 = 0
 	KindTextNote        uint32 = 1
