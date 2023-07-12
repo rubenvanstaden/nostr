@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"strconv"
@@ -98,7 +99,7 @@ func (s *Connection) Publish(ev nostr.Event) (nostr.Status, error) {
 }
 
 // TODO: Currently only returing a single events. Should be a stream
-func (s *Connection) Request(filters nostr.Filters) (*nostr.Event, error) {
+func (s *Connection) Request(ctx context.Context, filters nostr.Filters) (*nostr.Event, error) {
 
 	var req nostr.MessageReq
 	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.counter)
@@ -116,35 +117,27 @@ func (s *Connection) Request(filters nostr.Filters) (*nostr.Event, error) {
 		return nil, err
 	}
 
-	// Block for a status response from relays
-	_, raw, err := s.socket.ReadMessage()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	m := nostr.DecodeMessage(raw)
-	switch m.Type() {
-	case "EVENT":
-		event := m.(*nostr.MessageEvent)
-		switch event.Kind {
-		case nostr.KindTextNote:
-			log.Println("[\033[32m*\033[0m] Relay")
-			log.Printf("  CreatedAt: %d", event.CreatedAt)
-			log.Printf("  Content: %s", event.Content)
-			return &event.Event, nil
-		case nostr.KindSetMetadata:
-			log.Println("[\033[32m*\033[0m] Relay")
-			p, err := nostr.ParseMetadata(event.Event)
-			if err != nil {
-				log.Fatalf("unable to pull profile: %#v", err)
-			}
-			log.Printf("  name: %s", p.Name)
-			log.Printf("  about: %s", p.About)
-			log.Printf("  picture: %s", p.Picture)
-			return &event.Event, nil
-		}
-	default:
-		log.Fatalln("unknown message type from RELAY")
-	}
+    // Stream messages from websocket to inmem channel until context done.
+    orDone := func() <-chan *nostr.Event {
+        valStream := make(chan *nostr.Event)
+        go func() {
+            defer close(valStream)
+            for {
+                select {
+                    case <-ctx.Done():
+                        return
+                    default:
+                        valStream <- read(s.socket)
+                }
+            }
+        }()
+        return valStream
+    }
+
+    for val := range orDone() {
+        log.Println("VAL")
+        log.Println(val)
+    }
 
 	return nil, nil
 }
@@ -156,3 +149,36 @@ func (s *Connection) Close() {
 		log.Println("write close:", err)
 	}
 }
+
+func read(connection *websocket.Conn) *nostr.Event {
+
+	// Block for a status response from relays
+	_, raw, err := connection.ReadMessage()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	m := nostr.DecodeMessage(raw)
+
+	switch m.Type() {
+	case "EVENT":
+
+		event := m.(*nostr.MessageEvent)
+
+		switch event.Kind {
+		case nostr.KindTextNote:
+			return &event.Event
+		case nostr.KindSetMetadata:
+			_, err := nostr.ParseMetadata(event.Event)
+			if err != nil {
+				log.Fatalf("unable to pull profile: %#v", err)
+			}
+			return &event.Event
+		}
+
+	default:
+		log.Fatalln("unknown message type from RELAY")
+	}
+    return nil
+}
+

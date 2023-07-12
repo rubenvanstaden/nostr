@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -42,6 +43,8 @@ func (g *Request) Init(args []string) error {
 
 func (s *Request) Run() error {
 
+    ctx := context.TODO()
+
 	if s.profile != "" {
 
 		// Decode npub using NIP-19
@@ -55,7 +58,7 @@ func (s *Request) Run() error {
 			Kinds:   []uint32{nostr.KindSetMetadata},
 		}
 
-		event, err := s.cc.Request(nostr.Filters{f})
+		event, err := s.cc.Request(ctx, nostr.Filters{f})
 		if err != nil {
 			return err
 		}
@@ -83,7 +86,7 @@ func (s *Request) Run() error {
 			Limit:   3,
 		}
 
-		event, err := s.cc.Request(nostr.Filters{f})
+		event, err := s.cc.Request(ctx, nostr.Filters{f})
 		if err != nil {
 			return err
 		}

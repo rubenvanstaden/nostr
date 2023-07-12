@@ -1,13 +1,10 @@
 package cli
 
 import (
-	"encoding/json"
+	"context"
 	"flag"
 	"log"
-	"strconv"
-	"sync"
 
-	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/nostr"
 )
@@ -60,7 +57,11 @@ func (s *Follow) Run() error {
 	return nil
 }
 
+// A subscription to follow a specific npub has to make
+// a REQ to connected relays with the proper filter.
 func (s *Follow) subscribe(npub string) error {
+
+    ctx := context.TODO()
 
 	// Decode npub using NIP-19
 	_, pk, err := crypto.DecodeBech32(npub)
@@ -71,72 +72,14 @@ func (s *Follow) subscribe(npub string) error {
 	f := nostr.Filter{
 		Authors: []string{pk.(string)},
 		Kinds:   []uint32{nostr.KindTextNote},
-		Limit:   5,
+		Limit:   3,
 	}
 
-	var req nostr.MessageReq
-	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.cc.counter)
-	req.Filters = nostr.Filters{f}
+	log.Printf("[\033[33m*\033[0m] client requests to follow %s...", npub[:20])
 
-	// Marshal to a slice of bytes ready for transmission.
-	msg, err := json.Marshal(req)
-	if err != nil {
-		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
-	}
-
-	log.Printf("[\033[32m*\033[0m] Client")
-	log.Printf("  request to follow (npub: %s...)", npub[:10])
-
-	// Transmit event message to the spoke that connects to the relays.
-	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
-	if err != nil {
-		return err
-	}
+    s.cc.Request(ctx, nostr.Filters{f})
 
 	// Streaming reponses from the connected relay.
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			_, raw, err := s.cc.socket.ReadMessage()
-			if err != nil {
-				log.Fatalln(err)
-				return
-			}
-			msg := nostr.DecodeMessage(raw)
-			switch msg.Type() {
-			case "EVENT":
-				event := msg.(*nostr.MessageEvent)
-				switch event.Kind {
-				case nostr.KindTextNote:
-					log.Println("[\033[32m*\033[0m] Relay")
-					log.Printf("  CreatedAt: %d", event.CreatedAt)
-					log.Printf("  Content: %s", event.Content)
-				case nostr.KindSetMetadata:
-					log.Println("[\033[32m*\033[0m] Relay")
-					p, err := nostr.ParseMetadata(event.Event)
-					if err != nil {
-						log.Fatalf("unable to pull profile: %#v", err)
-					}
-					log.Printf("  name: %s", p.Name)
-					log.Printf("  about: %s", p.About)
-					log.Printf("  picture: %s", p.Picture)
-				}
-			case "REQ":
-				log.Printf("\n[Relay Response] REQ - %v", msg)
-			case "OK":
-				e := msg.(*nostr.MessageResult)
-				log.Printf("[\033[32m*\033[0m] Relay")
-				log.Printf("  status: OK")
-				log.Printf("  message: %s", e.Message)
-			default:
-				log.Fatalln("unknown message type from RELAY")
-			}
-		}
-	}()
-	wg.Wait()
 
 	return nil
 }
