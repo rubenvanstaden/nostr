@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 
 	"github.com/rubenvanstaden/crypto"
@@ -62,18 +60,13 @@ func (s *Request) Run() error {
 			return err
 		}
 
-		log.Printf("[\033[1;36m>\033[0m] Profile metadata for %s", s.profile)
-		p, err := nostr.ParseMetadata(*event)
+		profile, err := nostr.ParseMetadata(*event)
 		if err != nil {
 			log.Fatalf("unable to pull profile: %#v", err)
 		}
 
-		jsonData, err := json.MarshalIndent(p, "", "    ")
-		if err != nil {
-			fmt.Println("Error encoding JSON:", err)
-		}
-
-		fmt.Println(string(jsonData))
+		log.Printf("[\033[1;36m>\033[0m] Profile metadata for %s", s.profile)
+		PrintJson(profile)
 	}
 
 	if s.notes != "" {
@@ -96,12 +89,7 @@ func (s *Request) Run() error {
 		}
 
 		log.Printf("[\033[1;36m>\033[0m] Text notes from %s", s.profile)
-		jsonData, err := json.MarshalIndent(event, "", "    ")
-		if err != nil {
-			fmt.Println("Error encoding JSON:", err)
-		}
-
-		fmt.Println(string(jsonData))
+		PrintJson(event)
 	}
 
 	return nil

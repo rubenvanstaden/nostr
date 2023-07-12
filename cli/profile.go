@@ -105,7 +105,7 @@ func (s *Profile) view() error {
 		log.Fatalf("unable to decode local config: %v", err)
 	}
 
-	log.Printf("\n%#v\n", config)
+	PrintJson(config)
 
 	return nil
 }

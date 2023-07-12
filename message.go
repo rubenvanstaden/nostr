@@ -51,9 +51,8 @@ type Message interface {
 	MarshalJSON() ([]byte, error)
 }
 
-// ----------------------------------------------
-
 // NIP-20 - ["OK", <event_id>, <true|false>, <message>]
+
 type MessageResult struct {
 	EventId string
 	Stored  bool
@@ -104,7 +103,7 @@ func (s MessageResult) MarshalJSON() ([]byte, error) {
 	return msg, nil
 }
 
-// ----------------------------------------------
+// NIP-01 - ["EVENT", <subscription_id>, <event JSON as defined above>]
 
 type MessageEvent struct {
 	SubscriptionId string
@@ -128,6 +127,8 @@ func (s *MessageEvent) UnmarshalJSON(data []byte) error {
 		log.Fatalln("unable to unmarshal EVENT msg")
 	}
 
+    // Is len(2) then it is an event from client-to-relay
+    // Otherwise its an event from relay-to-client
 	switch len(tmp) {
 	case 2:
 		return json.Unmarshal(tmp[1], &s.Event)
@@ -139,7 +140,6 @@ func (s *MessageEvent) UnmarshalJSON(data []byte) error {
 	}
 }
 
-// NIP-01 - ["EVENT", <event JSON as defined above>]
 func (s MessageEvent) MarshalJSON() ([]byte, error) {
 
 	msg := append([]byte(nil), []byte(`["EVENT",`)...)
@@ -161,7 +161,7 @@ func (s MessageEvent) MarshalJSON() ([]byte, error) {
 	return msg, nil
 }
 
-// ----------------------------------------------
+// NIP-01 - ["REQ", <subscription_id>, <filters JSON>...]
 
 type MessageReq struct {
 	SubscriptionId string
@@ -190,7 +190,6 @@ func (s *MessageReq) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(tmp[2], &s.Filters)
 }
 
-// NIP-01 - ["REQ", <subscription_id>, <filters JSON>...]
 func (s MessageReq) MarshalJSON() ([]byte, error) {
 
 	msg := []byte(nil)
@@ -203,9 +202,6 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 
 	// Add subscription ID between string braces.
 	msg = append(msg, []byte(`"`+s.SubscriptionId+`",`)...)
-
-	// Open the filter list
-	//msg = append(msg, []byte(`{`)...)
 
 	for i, v := range s.Filters {
 
@@ -223,9 +219,6 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 			msg = append(msg, []byte(`,`)...)
 		}
 	}
-
-	// Close the filter list
-	//msg = append(msg, []byte(`}`)...)
 
 	// Close the entire message.
 	msg = append(msg, []byte(`]`)...)

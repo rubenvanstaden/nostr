@@ -49,16 +49,6 @@ func (s Event) String() string {
 }
 
 // The serialization is done over the UTF-8 JSON-serialized string (with no white space or line breaks).
-// [
-//
-//	0,
-//	<pubkey, as a (lowercase) hex string>,
-//	<created_at, as a number>,
-//	<kind, as a number>,
-//	<tags, as an array of arrays of non-null strings>,
-//	<content, as a string>
-//
-// ]
 func (s Event) Serialize() []byte {
 
 	out := make([]byte, 0)
