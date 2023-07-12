@@ -1,22 +1,24 @@
-package core
+package cli
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/rubenvanstaden/nostr"
 )
 
 type Config struct {
-	Path       string            `json:"path"`
-	PublicKey  string            `json:"publickey,omitempty"`
-	PrivateKey string            `json:"privatekey,omitempty"`
-	Profile    Profile           `json:"profile"`
-	Relays     []string          `json:"relays,omitempty"`
-	Following  map[string]Follow `json:"following,omitempty"`
+	Path       string          `json:"path"`
+	PublicKey  string          `json:"publickey,omitempty"`
+	PrivateKey string          `json:"privatekey,omitempty"`
+	Profile    nostr.Profile   `json:"profile"`
+	Relays     []string        `json:"relays,omitempty"`
+	Following  map[string]User `json:"following,omitempty"`
 }
 
-type Follow struct {
+type User struct {
 	PublicKey string `json:"key"`
 	Name      string `json:"name,omitempty"`
 }

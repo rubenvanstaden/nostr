@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/nostr"
 )
 
 func NewFollow(cc *Connection) *Follow {
@@ -68,15 +68,15 @@ func (s *Follow) subscribe(npub string) error {
 		log.Fatalf("\nunable to decode npub: %#v", err)
 	}
 
-	f := core.Filter{
+	f := nostr.Filter{
 		Authors: []string{pk.(string)},
-		Kinds:   []uint32{core.KindTextNote},
+		Kinds:   []uint32{nostr.KindTextNote},
 		Limit:   5,
 	}
 
-	var req core.MessageReq
+	var req nostr.MessageReq
 	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.cc.counter)
-	req.Filters = core.Filters{f}
+	req.Filters = nostr.Filters{f}
 
 	// Marshal to a slice of bytes ready for transmission.
 	msg, err := json.Marshal(req)
@@ -105,18 +105,18 @@ func (s *Follow) subscribe(npub string) error {
 				log.Fatalln(err)
 				return
 			}
-			msg := core.DecodeMessage(raw)
+			msg := nostr.DecodeMessage(raw)
 			switch msg.Type() {
 			case "EVENT":
-				event := msg.(*core.MessageEvent)
+				event := msg.(*nostr.MessageEvent)
 				switch event.Kind {
-				case core.KindTextNote:
+				case nostr.KindTextNote:
 					log.Println("[\033[32m*\033[0m] Relay")
 					log.Printf("  CreatedAt: %d", event.CreatedAt)
 					log.Printf("  Content: %s", event.Content)
-				case core.KindSetMetadata:
+				case nostr.KindSetMetadata:
 					log.Println("[\033[32m*\033[0m] Relay")
-					p, err := core.ParseMetadata(event.Event)
+					p, err := nostr.ParseMetadata(event.Event)
 					if err != nil {
 						log.Fatalf("unable to pull profile: %#v", err)
 					}
@@ -127,7 +127,7 @@ func (s *Follow) subscribe(npub string) error {
 			case "REQ":
 				log.Printf("\n[Relay Response] REQ - %v", msg)
 			case "OK":
-				e := msg.(*core.MessageResult)
+				e := msg.(*nostr.MessageResult)
 				log.Printf("[\033[32m*\033[0m] Relay")
 				log.Printf("  status: OK")
 				log.Printf("  message: %s", e.Message)

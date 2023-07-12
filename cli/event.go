@@ -1,10 +1,10 @@
-package main
+package cli
 
 import (
 	"flag"
 	"log"
 
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/nostr"
 )
 
 func NewEvent(cc *Connection) *Event {
@@ -39,15 +39,15 @@ func (s *Event) Run() error {
 
 	if s.note != "" {
 
-		e := core.Event{
-			Kind:      core.KindTextNote,
+		e := nostr.Event{
+			Kind:      nostr.KindTextNote,
 			Tags:      nil,
-			CreatedAt: core.Now(),
+			CreatedAt: nostr.Now(),
 			Content:   s.note,
 		}
 
 		status, err := s.cc.Publish(e)
-		if status == core.StatusOK {
+		if status == nostr.StatusOK {
 			log.Printf("[\033[1;32m+\033[0m] Text note published: [status: %s]", status)
 		}
 		if err != nil {

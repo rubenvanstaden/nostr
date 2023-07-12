@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/json"
@@ -8,7 +8,12 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/env"
+	"github.com/rubenvanstaden/nostr"
+)
+
+var (
+	PRIVATE_KEY = env.String("NSEC")
 )
 
 type Connection struct {
@@ -30,10 +35,10 @@ func NewConnection(addr string) *Connection {
 	}
 }
 
-func (s *Connection) Publish(ev core.Event) (core.Status, error) {
+func (s *Connection) Publish(ev nostr.Event) (nostr.Status, error) {
 
 	// TODO: Maybe fix this
-	event := core.MessageEvent{
+	event := nostr.MessageEvent{
 		Event: ev,
 	}
 
@@ -58,7 +63,7 @@ func (s *Connection) Publish(ev core.Event) (core.Status, error) {
 	// Transmit event message to the spoke that connects to the relays.
 	err = s.socket.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
-		return core.StatusFail, err
+		return nostr.StatusFail, err
 	}
 
 	// Streaming reponses from the connected relay.
@@ -73,10 +78,10 @@ func (s *Connection) Publish(ev core.Event) (core.Status, error) {
 				log.Fatalln(err)
 				return
 			}
-			msg := core.DecodeMessage(raw)
+			msg := nostr.DecodeMessage(raw)
 			switch msg.Type() {
 			case "OK":
-				e := msg.(*core.MessageResult)
+				e := msg.(*nostr.MessageResult)
 				log.Printf("[\033[32m*\033[0m] Relay")
 				log.Printf("  status: OK")
 				log.Printf("  message: %s", e.Message)
@@ -89,13 +94,13 @@ func (s *Connection) Publish(ev core.Event) (core.Status, error) {
 	}()
 	wg.Wait()
 
-	return core.StatusOK, nil
+	return nostr.StatusOK, nil
 }
 
 // TODO: Currently only returing a single events. Should be a stream
-func (s *Connection) Request(filters core.Filters) (*core.Event, error) {
+func (s *Connection) Request(filters nostr.Filters) (*nostr.Event, error) {
 
-	var req core.MessageReq
+	var req nostr.MessageReq
 	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.counter)
 	req.Filters = filters
 
@@ -111,35 +116,35 @@ func (s *Connection) Request(filters core.Filters) (*core.Event, error) {
 		return nil, err
 	}
 
-    // Block for a status response from relays
-    _, raw, err := s.socket.ReadMessage()
-    if err != nil {
-        log.Fatalln(err)
-    }
-    m := core.DecodeMessage(raw)
-    switch m.Type() {
-    case "EVENT":
-        event := m.(*core.MessageEvent)
-        switch event.Kind {
-        case core.KindTextNote:
-            log.Println("[\033[32m*\033[0m] Relay")
-            log.Printf("  CreatedAt: %d", event.CreatedAt)
-            log.Printf("  Content: %s", event.Content)
-            return &event.Event, nil
-        case core.KindSetMetadata:
-            log.Println("[\033[32m*\033[0m] Relay")
-            p, err := core.ParseMetadata(event.Event)
-            if err != nil {
-                log.Fatalf("unable to pull profile: %#v", err)
-            }
-            log.Printf("  name: %s", p.Name)
-            log.Printf("  about: %s", p.About)
-            log.Printf("  picture: %s", p.Picture)
-            return &event.Event, nil
-        }
-    default:
-        log.Fatalln("unknown message type from RELAY")
-    }
+	// Block for a status response from relays
+	_, raw, err := s.socket.ReadMessage()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m := nostr.DecodeMessage(raw)
+	switch m.Type() {
+	case "EVENT":
+		event := m.(*nostr.MessageEvent)
+		switch event.Kind {
+		case nostr.KindTextNote:
+			log.Println("[\033[32m*\033[0m] Relay")
+			log.Printf("  CreatedAt: %d", event.CreatedAt)
+			log.Printf("  Content: %s", event.Content)
+			return &event.Event, nil
+		case nostr.KindSetMetadata:
+			log.Println("[\033[32m*\033[0m] Relay")
+			p, err := nostr.ParseMetadata(event.Event)
+			if err != nil {
+				log.Fatalf("unable to pull profile: %#v", err)
+			}
+			log.Printf("  name: %s", p.Name)
+			log.Printf("  about: %s", p.About)
+			log.Printf("  picture: %s", p.Picture)
+			return &event.Event, nil
+		}
+	default:
+		log.Fatalln("unknown message type from RELAY")
+	}
 
 	return nil, nil
 }

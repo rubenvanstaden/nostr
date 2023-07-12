@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/rubenvanstaden/env"
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/nostr/cli"
 )
 
 var (
@@ -23,16 +23,16 @@ type Runner interface {
 	Name() string
 }
 
-func root(args []string, cfg *core.Config, cc *Connection) error {
+func root(args []string, cfg *cli.Config, cc *cli.Connection) error {
 	if len(args) < 1 {
 		return errors.New("you must pass a sub-command")
 	}
 
 	cmds := []Runner{
-		NewProfile(cfg, cc),
-		NewEvent(cc),
-		NewFollow(cc),
-        NewRequest(cc),
+		cli.NewProfile(cfg, cc),
+		cli.NewEvent(cc),
+		cli.NewFollow(cc),
+		cli.NewRequest(cc),
 	}
 
 	subcommand := os.Args[1]
@@ -52,12 +52,12 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	cfg, err := core.DecodeConfig(CONFIG_PATH)
+	cfg, err := cli.DecodeConfig(CONFIG_PATH)
 	if err != nil {
 		log.Fatalf("unable to decode local cfg: %v", err)
 	}
 
-	cc := NewConnection(cfg.Relays[0])
+	cc := cli.NewConnection(cfg.Relays[0])
 	defer cc.Close()
 
 	// Parse CLI commands and process events

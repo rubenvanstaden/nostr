@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/nostr"
 )
 
 type Hub struct {
@@ -13,7 +13,7 @@ type Hub struct {
 	spokes map[*Spoke]bool
 
 	// Stream to broadcast event message to registered clients.
-	broadcast chan *core.Event
+	broadcast chan *nostr.Event
 
 	// Stream to concurrently handle client spoke registration.
 	register chan *Spoke
@@ -25,7 +25,7 @@ type Hub struct {
 func NewHub() *Hub {
 	return &Hub{
 		spokes:     make(map[*Spoke]bool),
-		broadcast:  make(chan *core.Event),
+		broadcast:  make(chan *nostr.Event),
 		register:   make(chan *Spoke),
 		unregister: make(chan *Spoke),
 	}
@@ -52,7 +52,7 @@ func (s *Hub) Run() {
 
 					if filters.Match(event) {
 
-						msg := core.MessageEvent{
+						msg := nostr.MessageEvent{
 							SubscriptionId: subId,
 							Event:          *event,
 						}

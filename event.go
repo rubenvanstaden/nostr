@@ -1,4 +1,4 @@
-package core
+package nostr
 
 import (
 	"crypto/sha256"

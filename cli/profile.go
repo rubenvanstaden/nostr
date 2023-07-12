@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/json"
@@ -8,10 +8,10 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/nostr"
 )
 
-func NewProfile(cfg *core.Config, cc *Connection) *Profile {
+func NewProfile(cfg *Config, cc *Connection) *Profile {
 
 	gc := &Profile{
 		fs:  flag.NewFlagSet("profile", flag.ContinueOnError),
@@ -31,7 +31,7 @@ func NewProfile(cfg *core.Config, cc *Connection) *Profile {
 
 type Profile struct {
 	fs  *flag.FlagSet
-	cfg *core.Config
+	cfg *Config
 	cc  *Connection
 
 	// Change the name field in profile.
@@ -81,10 +81,10 @@ func (s *Profile) Run() error {
 
 	// Commit event to relays to update profile.
 	if s.commit {
-		e := core.Event{
-			Kind:      core.KindSetMetadata,
+		e := nostr.Event{
+			Kind:      nostr.KindSetMetadata,
 			Tags:      nil,
-			CreatedAt: core.Now(),
+			CreatedAt: nostr.Now(),
 			Content:   s.cfg.Profile.String(),
 		}
 		status, err := s.cc.Publish(e)
@@ -100,7 +100,7 @@ func (s *Profile) Run() error {
 // View the current state of the profile as defined in CONFIG_PATH
 func (s *Profile) view() error {
 
-	config, err := core.DecodeConfig(CONFIG_PATH)
+	config, err := DecodeConfig(s.cfg.Path)
 	if err != nil {
 		log.Fatalf("unable to decode local config: %v", err)
 	}
@@ -119,14 +119,14 @@ func (s *Profile) request(npub string) error {
 		log.Fatalf("\nunable to decode npub: %#v", err)
 	}
 
-	f := core.Filter{
+	f := nostr.Filter{
 		Authors: []string{pk.(string)},
-		Kinds:   []uint32{core.KindSetMetadata},
+		Kinds:   []uint32{nostr.KindSetMetadata},
 	}
 
-	var req core.MessageReq
+	var req nostr.MessageReq
 	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.cc.counter)
-	req.Filters = core.Filters{f}
+	req.Filters = nostr.Filters{f}
 
 	// Marshal to a slice of bytes ready for transmission.
 	msg, err := json.Marshal(req)
