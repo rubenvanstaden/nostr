@@ -58,18 +58,19 @@ func (s *Request) Run() error {
 			Kinds:   []uint32{nostr.KindSetMetadata},
 		}
 
-		event, err := s.cc.Request(ctx, nostr.Filters{f})
+		err = s.cc.Request(ctx, nostr.Filters{f})
 		if err != nil {
 			return err
 		}
 
-		profile, err := nostr.ParseMetadata(*event)
-		if err != nil {
-			log.Fatalf("unable to pull profile: %#v", err)
-		}
-
 		log.Printf("[\033[1;36m>\033[0m] Profile metadata for %s", s.profile)
-		PrintJson(profile)
+        for event := range s.cc.EventStream {
+            profile, err := nostr.ParseMetadata(*event)
+            if err != nil {
+                log.Fatalf("unable to pull profile: %#v", err)
+            }
+            PrintJson(profile)
+        }
 	}
 
 	if s.notes != "" {
@@ -86,13 +87,13 @@ func (s *Request) Run() error {
 			Limit:   3,
 		}
 
-		event, err := s.cc.Request(ctx, nostr.Filters{f})
+		err = s.cc.Request(ctx, nostr.Filters{f})
 		if err != nil {
 			return err
 		}
 
 		log.Printf("[\033[1;36m>\033[0m] Text notes from %s", s.profile)
-		PrintJson(event)
+		//PrintJson(event)
 	}
 
 	return nil

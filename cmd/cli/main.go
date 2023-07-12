@@ -29,9 +29,10 @@ func root(args []string, cfg *cli.Config, cc *cli.Connection) error {
 	}
 
 	cmds := []Runner{
+		cli.NewHome(cfg, cc),
 		cli.NewProfile(cfg, cc),
 		cli.NewEvent(cc),
-		cli.NewFollow(cc),
+		cli.NewFollow(cfg, cc),
 		cli.NewRequest(cc),
 	}
 

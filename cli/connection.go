@@ -20,6 +20,10 @@ var (
 type Connection struct {
 	// Web socket connection between client and relay.
 	socket *websocket.Conn
+
+    // Move events from socket to local channel for processing.
+    EventStream chan *nostr.Event
+
 	// Counter for subscriptions
 	counter int
 }
@@ -32,6 +36,7 @@ func NewConnection(addr string) *Connection {
 	}
 	return &Connection{
 		socket:  connection,
+        EventStream: make(chan *nostr.Event),
 		counter: 0,
 	}
 }
@@ -99,7 +104,7 @@ func (s *Connection) Publish(ev nostr.Event) (nostr.Status, error) {
 }
 
 // TODO: Currently only returing a single events. Should be a stream
-func (s *Connection) Request(ctx context.Context, filters nostr.Filters) (*nostr.Event, error) {
+func (s *Connection) Request(ctx context.Context, filters nostr.Filters) error {
 
 	var req nostr.MessageReq
 	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.counter)
@@ -114,32 +119,26 @@ func (s *Connection) Request(ctx context.Context, filters nostr.Filters) (*nostr
 	// Transmit event message to the spoke that connects to the relays.
 	err = s.socket.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
     // Stream messages from websocket to inmem channel until context done.
-    orDone := func() <-chan *nostr.Event {
-        valStream := make(chan *nostr.Event)
-        go func() {
-            defer close(valStream)
-            for {
-                select {
-                    case <-ctx.Done():
-                        return
-                    default:
-                        valStream <- read(s.socket)
-                }
+	//var wg sync.WaitGroup
+	//wg.Add(1)
+    go func() {
+		//defer wg.Done()
+        for {
+            select {
+                case <-ctx.Done():
+                    return
+                default:
+                    s.EventStream <- read(s.socket)
             }
-        }()
-        return valStream
-    }
+        }
+    }()
+	//wg.Wait()
 
-    for val := range orDone() {
-        log.Println("VAL")
-        log.Println(val)
-    }
-
-	return nil, nil
+	return nil
 }
 
 func (s *Connection) Close() {

@@ -15,13 +15,25 @@ type Config struct {
 	PrivateKey string          `json:"privatekey,omitempty"`
 	Profile    nostr.Profile   `json:"profile"`
 	Relays     []string        `json:"relays,omitempty"`
-	Following  map[string]User `json:"following,omitempty"`
+	Following  map[string]Author `json:"following,omitempty"`
 }
 
-type User struct {
+type Author struct {
 	PublicKey string `json:"key"`
 	Name      string `json:"name,omitempty"`
 }
+
+func NewConfig() *Config {
+    return &Config{
+        Path: "",
+        PublicKey: "",
+        PrivateKey: "",
+        Profile: nostr.Profile{},
+        Relays: []string{},
+        Following: make(map[string]Author),
+    }
+}
+
 
 func DecodeConfig(path string) (*Config, error) {
 
@@ -33,9 +45,10 @@ func DecodeConfig(path string) (*Config, error) {
 	defer file.Close()
 
 	// Decode the file
-	var config Config
+    config := NewConfig()
+
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
+	err = decoder.Decode(config)
 	if err != nil {
 		return nil, err
 	}
@@ -44,9 +57,10 @@ func DecodeConfig(path string) (*Config, error) {
 		config.Path = path
 	}
 
-	return &config, nil
+	return config, nil
 }
 
+// Save change to inmem data structure to persistent local file.
 func (s *Config) Encode() {
 
 	// Open the file
@@ -70,5 +84,5 @@ func (s *Config) Encode() {
 		return
 	}
 
-	log.Println("local config updated")
+	log.Println("[-] Config file updated")
 }

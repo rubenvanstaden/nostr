@@ -9,10 +9,11 @@ import (
 	"github.com/rubenvanstaden/nostr"
 )
 
-func NewFollow(cc *Connection) *Follow {
+func NewFollow(cfg *Config, cc *Connection) *Follow {
 
 	gc := &Follow{
 		fs: flag.NewFlagSet("follow", flag.ContinueOnError),
+        cfg: cfg,
 		cc: cc,
 	}
 
@@ -25,6 +26,7 @@ func NewFollow(cc *Connection) *Follow {
 
 type Follow struct {
 	fs *flag.FlagSet
+    cfg *Config
 	cc *Connection
 
 	ls     string
@@ -59,9 +61,22 @@ func (s *Follow) Run() error {
 
 // A subscription to follow a specific npub has to make
 // a REQ to connected relays with the proper filter.
+
 func (s *Follow) subscribe(npub string) error {
 
     ctx := context.TODO()
+
+    // 1. Update local config with new user.
+
+    s.cfg.Following[npub] = Author{
+        PublicKey: npub,
+        Name: "Alice",
+    }
+
+    // Save to persistent file.
+    s.cfg.Encode()
+
+    // 2. Send REQ to relays to add author.
 
 	// Decode npub using NIP-19
 	_, pk, err := crypto.DecodeBech32(npub)
@@ -77,9 +92,14 @@ func (s *Follow) subscribe(npub string) error {
 
 	log.Printf("[\033[33m*\033[0m] client requests to follow %s...", npub[:20])
 
-    s.cc.Request(ctx, nostr.Filters{f})
+    err = s.cc.Request(ctx, nostr.Filters{f})
+	if err != nil {
+		log.Fatalf("\nunable to request new subsciption npub: %#v", err)
+	}
 
-	// Streaming reponses from the connected relay.
+    for event := range s.cc.EventStream {
+        PrintJson(event)
+    }
 
 	return nil
 }
