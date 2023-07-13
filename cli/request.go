@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"log"
 
@@ -43,8 +42,6 @@ func (g *Request) Init(args []string) error {
 
 func (s *Request) Run() error {
 
-    ctx := context.TODO()
-
 	if s.profile != "" {
 
 		// Decode npub using NIP-19
@@ -58,19 +55,19 @@ func (s *Request) Run() error {
 			Kinds:   []uint32{nostr.KindSetMetadata},
 		}
 
-		err = s.cc.Request(ctx, nostr.Filters{f})
+		sub, err := s.cc.Subscribe(nostr.Filters{f})
 		if err != nil {
 			return err
 		}
 
 		log.Printf("[\033[1;36m>\033[0m] Profile metadata for %s", s.profile)
-        for event := range s.cc.EventStream {
-            profile, err := nostr.ParseMetadata(*event)
-            if err != nil {
-                log.Fatalf("unable to pull profile: %#v", err)
-            }
-            PrintJson(profile)
-        }
+		for event := range sub.EventStream {
+			profile, err := nostr.ParseMetadata(*event)
+			if err != nil {
+				log.Fatalf("unable to pull profile: %#v", err)
+			}
+			PrintJson(profile)
+		}
 	}
 
 	if s.notes != "" {
@@ -87,13 +84,16 @@ func (s *Request) Run() error {
 			Limit:   3,
 		}
 
-		err = s.cc.Request(ctx, nostr.Filters{f})
+		sub, err := s.cc.Subscribe(nostr.Filters{f})
 		if err != nil {
 			return err
 		}
 
 		log.Printf("[\033[1;36m>\033[0m] Text notes from %s", s.profile)
-		//PrintJson(event)
+
+		for event := range sub.EventStream {
+			PrintJson(event)
+		}
 	}
 
 	return nil

@@ -25,7 +25,7 @@ func DecodeMessage(msg []byte) Message {
 	case bytes.Contains(label, []byte("REQ")):
 		v = &MessageReq{}
 	case bytes.Contains(label, []byte("OK")):
-		v = &MessageResult{}
+		v = &MessageOk{}
 	case bytes.Contains(label, []byte("EOSE")):
 		v = &MessageEose{}
 	default:
@@ -55,17 +55,17 @@ type Message interface {
 
 // NIP-20 - ["OK", <event_id>, <true|false>, <message>]
 
-type MessageResult struct {
+type MessageOk struct {
 	EventId string
-	Stored  bool
+	Ok      bool
 	Message string
 }
 
-func (s MessageResult) Type() MessageType {
+func (s MessageOk) Type() MessageType {
 	return MessageType("OK")
 }
 
-func (s *MessageResult) UnmarshalJSON(data []byte) error {
+func (s *MessageOk) UnmarshalJSON(data []byte) error {
 
 	var tmp []json.RawMessage
 
@@ -76,9 +76,9 @@ func (s *MessageResult) UnmarshalJSON(data []byte) error {
 
 	s.EventId = string(tmp[1])
 
-	s.Stored = false
+	s.Ok = false
 	if string(tmp[2]) == "true" {
-		s.Stored = true
+		s.Ok = true
 	}
 
 	s.Message = string(tmp[3])
@@ -86,7 +86,7 @@ func (s *MessageResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s MessageResult) MarshalJSON() ([]byte, error) {
+func (s MessageOk) MarshalJSON() ([]byte, error) {
 
 	msg := append([]byte(nil), []byte(`["OK",`)...)
 
@@ -94,7 +94,7 @@ func (s MessageResult) MarshalJSON() ([]byte, error) {
 		msg = append(msg, []byte(s.EventId+`,`)...)
 	}
 
-	if s.Stored {
+	if s.Ok {
 		msg = append(msg, []byte("true")...)
 	} else {
 		msg = append(msg, []byte("false")...)
@@ -112,6 +112,7 @@ type MessageEvent struct {
 	Event
 }
 
+// Jesus christ, the Subscription map didnt want to map unless trimmed. Mother fucker. Fuck trimming string always. jesus christ
 func (s MessageEvent) GetSubId() string {
 	return strings.Trim(s.SubscriptionId, "\"")
 }
@@ -129,8 +130,8 @@ func (s *MessageEvent) UnmarshalJSON(data []byte) error {
 		log.Fatalln("unable to unmarshal EVENT msg")
 	}
 
-    // Is len(2) then it is an event from client-to-relay
-    // Otherwise its an event from relay-to-client
+	// Is len(2) then it is an event from client-to-relay
+	// Otherwise its an event from relay-to-client
 	switch len(tmp) {
 	case 2:
 		return json.Unmarshal(tmp[1], &s.Event)

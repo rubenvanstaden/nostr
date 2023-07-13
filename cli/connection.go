@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"log"
-	"strconv"
-	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/rubenvanstaden/crypto"
@@ -18,14 +16,22 @@ var (
 )
 
 type Connection struct {
+
 	// Web socket connection between client and relay.
 	socket *websocket.Conn
 
-    // Move events from socket to local channel for processing.
-    EventStream chan *nostr.Event
+	// The connection owns the subscriptions.
+	// Make a pointer, since we want to update the subscription event channel.
+	subscriptions map[string]*Subscription
 
-	// Counter for subscriptions
-	counter int
+	// Write events from channel to connected relays.
+	eventStream chan nostr.MessageEvent
+
+	// Write request from channel to connected relay socket.
+	reqStream chan nostr.MessageReq
+
+	// Complete close connection
+	done chan struct{}
 }
 
 func NewConnection(addr string) *Connection {
@@ -35,12 +41,103 @@ func NewConnection(addr string) *Connection {
 		log.Fatal("websocket dial: ", err)
 	}
 	return &Connection{
-		socket:  connection,
-        EventStream: make(chan *nostr.Event),
-		counter: 0,
+		socket:        connection,
+		subscriptions: make(map[string]*Subscription),
+		eventStream:   make(chan nostr.MessageEvent),
+		reqStream:     make(chan nostr.MessageReq),
+		done:          make(chan struct{}),
 	}
 }
 
+// Listen to incoming events from remote relays by reading from socket.
+// The caller should run this method in a goroutine.
+func (s *Connection) Listen() error {
+
+	// Listen to requests on the reqStream that should be broadcasted to relays.
+	go func() {
+		for {
+			select {
+			case <-s.done:
+				return
+			case event := <-s.eventStream:
+
+				log.Println("Writing event to relays")
+
+				// Marshal the signed event to a slice of bytes ready for transmission.
+				bytes, err := json.Marshal(event)
+				if err != nil {
+					log.Fatalf("\nunable to marshal incoming EVENT: %#v", err)
+				}
+
+				// Transmit event message to the spoke that connects to the relays.
+				err = s.socket.WriteMessage(websocket.TextMessage, bytes)
+				if err != nil {
+					// TODO: add an error channel pattern
+					log.Fatalln(err)
+				}
+
+			case req := <-s.reqStream:
+
+				log.Println("Writing request to relays")
+
+				// Marshal to a slice of bytes ready for transmission.
+				bytes, err := json.Marshal(req)
+				if err != nil {
+					log.Fatalf("\nunable to marshal incoming REQ: %#v", err)
+				}
+
+				// Transmit event message to the spoke that connects to the relays.
+				err = s.socket.WriteMessage(websocket.TextMessage, bytes)
+				if err != nil {
+					// TODO: add an error channel pattern
+					log.Fatalln(err)
+				}
+
+			}
+		}
+	}()
+
+	// Read incoming messages on socket from relays.
+	go func() {
+		for {
+
+			// Block for a status response from relays
+			_, raw, err := s.socket.ReadMessage()
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			msg := nostr.DecodeMessage(raw)
+
+			switch msg.Type() {
+			case "EVENT":
+
+				event := msg.(*nostr.MessageEvent)
+
+				// Dispatch event to inmem subscription channel.
+				if sub, ok := s.subscriptions[event.GetSubId()]; ok {
+					sub.EventStream <- &event.Event
+				}
+
+				// Show relay response status after publishing an event.
+			case "OK":
+				ok := msg.(*nostr.MessageOk)
+				log.Printf("OK: %v, message: %s", ok.Ok, ok.Message)
+
+			// Close is end of new events.
+			case "EOSE":
+				continue
+			}
+		}
+	}()
+
+	log.Println("Connection established to relays")
+
+	return nil
+}
+
+// Publish events to remote relays.
+// Sign event before publishing
 func (s *Connection) Publish(ev nostr.Event) (nostr.Status, error) {
 
 	// TODO: Maybe fix this
@@ -60,85 +157,29 @@ func (s *Connection) Publish(ev nostr.Event) (nostr.Status, error) {
 	// We have to sign last, since the signature is dependent on the event content.
 	event.Sign(sk)
 
-	// Marshal the signed event to a slice of bytes ready for transmission.
-	msg, err := json.Marshal(event)
-	if err != nil {
-		log.Fatalln("unable to marchal incoming event")
-	}
+	s.eventStream <- event
 
-	// Transmit event message to the spoke that connects to the relays.
-	err = s.socket.WriteMessage(websocket.TextMessage, msg)
-	if err != nil {
-		return nostr.StatusFail, err
-	}
-
-	// Streaming reponses from the connected relay.
-	// Wait till be get the OK from all relays.
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			_, raw, err := s.socket.ReadMessage()
-			if err != nil {
-				log.Fatalln(err)
-				return
-			}
-			msg := nostr.DecodeMessage(raw)
-			switch msg.Type() {
-			case "OK":
-				e := msg.(*nostr.MessageResult)
-				log.Printf("[\033[32m*\033[0m] Relay")
-				log.Printf("  status: OK")
-				log.Printf("  message: %s", e.Message)
-				return
-			default:
-				log.Fatalln("unknown message type from RELAY")
-				return
-			}
-		}
-	}()
-	wg.Wait()
+    time.Sleep(2*time.Second)
 
 	return nostr.StatusOK, nil
 }
 
-// TODO: Currently only returing a single events. Should be a stream
-func (s *Connection) Request(ctx context.Context, filters nostr.Filters) error {
+func (s *Connection) Subscribe(filters nostr.Filters) (*Subscription, error) {
 
-	var req nostr.MessageReq
-	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.counter)
-	req.Filters = filters
+	// 1. Create a new subscription and take ownership
 
-	// Marshal to a slice of bytes ready for transmission.
-	msg, err := json.Marshal(req)
+	sub := NewSubscription()
+
+	s.subscriptions[sub.GetId()] = sub
+
+	// 2. Fire a REQ to the relay.
+
+	err := sub.Fire(filters, s.reqStream)
 	if err != nil {
-		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
+		return nil, err
 	}
 
-	// Transmit event message to the spoke that connects to the relays.
-	err = s.socket.WriteMessage(websocket.TextMessage, msg)
-	if err != nil {
-		return err
-	}
-
-    // Stream messages from websocket to inmem channel until context done.
-	//var wg sync.WaitGroup
-	//wg.Add(1)
-    go func() {
-		//defer wg.Done()
-        for {
-            select {
-                case <-ctx.Done():
-                    return
-                default:
-                    s.EventStream <- read(s.socket)
-            }
-        }
-    }()
-	//wg.Wait()
-
-	return nil
+	return sub, nil
 }
 
 func (s *Connection) Close() {
@@ -148,35 +189,3 @@ func (s *Connection) Close() {
 		log.Println("write close:", err)
 	}
 }
-
-func read(connection *websocket.Conn) *nostr.Event {
-
-	// Block for a status response from relays
-	_, raw, err := connection.ReadMessage()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	m := nostr.DecodeMessage(raw)
-
-	switch m.Type() {
-	case "EVENT":
-		event := m.(*nostr.MessageEvent)
-		switch event.Kind {
-		case nostr.KindTextNote:
-			return &event.Event
-		case nostr.KindSetMetadata:
-			_, err := nostr.ParseMetadata(event.Event)
-			if err != nil {
-				log.Fatalf("unable to pull profile: %#v", err)
-			}
-			return &event.Event
-		}
-    case "EOSE":
-        return &nostr.Event{}
-	default:
-		log.Fatalln("unknown message type from RELAY")
-	}
-    return nil
-}
-
