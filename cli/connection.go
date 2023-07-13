@@ -161,9 +161,7 @@ func read(connection *websocket.Conn) *nostr.Event {
 
 	switch m.Type() {
 	case "EVENT":
-
 		event := m.(*nostr.MessageEvent)
-
 		switch event.Kind {
 		case nostr.KindTextNote:
 			return &event.Event
@@ -174,7 +172,8 @@ func read(connection *websocket.Conn) *nostr.Event {
 			}
 			return &event.Event
 		}
-
+    case "EOSE":
+        return &nostr.Event{}
 	default:
 		log.Fatalln("unknown message type from RELAY")
 	}

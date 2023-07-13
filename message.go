@@ -26,6 +26,8 @@ func DecodeMessage(msg []byte) Message {
 		v = &MessageReq{}
 	case bytes.Contains(label, []byte("OK")):
 		v = &MessageResult{}
+	case bytes.Contains(label, []byte("EOSE")):
+		v = &MessageEose{}
 	default:
 		log.Fatalln("cannot decode message")
 	}
@@ -219,6 +221,53 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 			msg = append(msg, []byte(`,`)...)
 		}
 	}
+
+	// Close the entire message.
+	msg = append(msg, []byte(`]`)...)
+
+	return msg, nil
+}
+
+// NIP-01 - ["EOSE", <subscription_id>]
+
+type MessageEose struct {
+	SubscriptionId string
+}
+
+func (s MessageEose) GetSubId() string {
+	return strings.Trim(s.SubscriptionId, "\"")
+}
+
+func (s MessageEose) Type() MessageType {
+	return MessageType("EOSE")
+}
+
+func (s *MessageEose) UnmarshalJSON(data []byte) error {
+
+	var tmp []json.RawMessage
+
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		log.Fatalln("unable to unmarshal REQ msg")
+	}
+
+	s.SubscriptionId = string(tmp[1])
+
+	return nil
+}
+
+func (s MessageEose) MarshalJSON() ([]byte, error) {
+
+	msg := []byte(nil)
+
+	// Open message array.
+	msg = append(msg, []byte(`[`)...)
+
+	// Add message label
+	msg = append(msg, []byte(`"REQ",`)...)
+
+	// Add subscription ID between string braces.
+	msg = append(msg, []byte(`"`+s.SubscriptionId+`"`)...)
 
 	// Close the entire message.
 	msg = append(msg, []byte(`]`)...)

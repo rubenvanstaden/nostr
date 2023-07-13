@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/rubenvanstaden/crypto"
@@ -52,9 +53,13 @@ func (s *Home) Run() error {
             log.Fatalf("unable to decode local config: %v", err)
         }
 
-        for _, user := range config.Following {
+        for _, author := range config.Following {
 
-            _, pk, err := crypto.DecodeBech32(user.PublicKey)
+            // 2. Print Author line
+
+            log.Printf("* %s%s%s", "\033[35m", author.Name, "\033[0m")
+
+            _, pk, err := crypto.DecodeBech32(author.PublicKey)
             if err != nil {
                 log.Fatalf("\nunable to decode npub: %#v", err)
             }
@@ -68,8 +73,11 @@ func (s *Home) Run() error {
 
             s.cc.Request(ctx, nostr.Filters{f})
 
+            // FIXME: This is probabily a race condition
+
             for event := range s.cc.EventStream {
-                PrintJson(event)
+                fmt.Printf("  [%s]\n\n", event.CreatedAt.Time())
+                fmt.Printf("    ⤷  %s\n\n", event.Content)
             }
         }
 	}
