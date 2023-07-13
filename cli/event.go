@@ -46,9 +46,9 @@ func (s *Event) Run() error {
 			Content:   s.note,
 		}
 
-		status, err := s.cc.Publish(e)
-		if status == nostr.StatusOK {
-			log.Printf("[\033[1;32m+\033[0m] Text note published: [status: %s]", status)
+		ok, err := s.cc.Publish(e)
+		if ok != nil {
+			log.Printf("[\033[1;32m+\033[0m] Text note published: [status: %s]", ok.Ok)
 		}
 		if err != nil {
 			return err

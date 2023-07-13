@@ -76,7 +76,7 @@ func (s *Home) Run() error {
 
 			// FIXME: This is probabily a race condition
 
-            time.Sleep(2*time.Second)
+			time.Sleep(2 * time.Second)
 
 			for event := range sub.EventStream {
 				fmt.Printf("  [%s]\n\n", event.CreatedAt.Time())

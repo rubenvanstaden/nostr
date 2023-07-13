@@ -61,6 +61,10 @@ type MessageOk struct {
 	Message string
 }
 
+func (s MessageOk) GetEventId() string {
+	return strings.Trim(s.EventId, "\"")
+}
+
 func (s MessageOk) Type() MessageType {
 	return MessageType("OK")
 }

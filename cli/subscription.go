@@ -47,11 +47,11 @@ func (s *Subscription) Fire(filters nostr.Filters, reqStream chan<- nostr.Messag
 	req.SubscriptionId = s.GetId()
 	req.Filters = filters
 
-    select {
-    case reqStream <- req:
-    case <-s.done:
-        return nil
-    }
+	select {
+	case reqStream <- req:
+	case <-s.done:
+		return nil
+	}
 
 	return nil
 }
