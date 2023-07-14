@@ -7,7 +7,7 @@ relay:
 	go run ./cmd/relay/main.go
 
 build:
-	go build -o ./bin/ncli ./cmd/cli/* 
+	go build -o ./bin/ncli ./cmd/cli/* ./cli/*
 
 fmt:
 	go mod tidy -compat=1.17
