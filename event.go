@@ -1,4 +1,4 @@
-package core
+package nostr
 
 import (
 	"crypto/sha256"
@@ -11,11 +11,17 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 )
 
-type Kind uint32
+type Status string
 
 const (
-	KindSetMetadata Kind = 0
-	KindTextNote    Kind = 1
+	StatusOK   Status = "OK"
+	StatusFail Status = "FAIL"
+)
+
+const (
+	KindSetMetadata     uint32 = 0
+	KindTextNote        uint32 = 1
+	KindRecommendServer uint32 = 2
 )
 
 type Event struct {
@@ -43,16 +49,6 @@ func (s Event) String() string {
 }
 
 // The serialization is done over the UTF-8 JSON-serialized string (with no white space or line breaks).
-// [
-//
-//	0,
-//	<pubkey, as a (lowercase) hex string>,
-//	<created_at, as a number>,
-//	<kind, as a number>,
-//	<tags, as an array of arrays of non-null strings>,
-//	<content, as a string>
-//
-// ]
 func (s Event) Serialize() []byte {
 
 	out := make([]byte, 0)
@@ -79,8 +75,6 @@ func (s Event) Serialize() []byte {
 
 func (s *Event) Sign(key string) error {
 
-	log.Printf("signing event with key: %s", key)
-
 	bytes, err := hex.DecodeString(key)
 	if err != nil {
 		log.Fatalf("unable to decode secret: %v", err)
@@ -104,7 +98,8 @@ func (s *Event) Sign(key string) error {
 	s.Id = hex.EncodeToString(h[:])
 	s.Sig = hex.EncodeToString(sig.Serialize())
 
-	log.Printf("event signed with ID: %s", s.Id)
+	log.Printf("\n[\033[32m*\033[0m] Client")
+	log.Printf("  Event signed with SK: %s", key[:10])
 
 	return nil
 }

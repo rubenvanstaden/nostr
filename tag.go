@@ -1,4 +1,4 @@
-package core
+package nostr
 
 type Tag []string
 
