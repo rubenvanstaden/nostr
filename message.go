@@ -1,4 +1,4 @@
-package core
+package nostr
 
 import (
 	"bytes"
@@ -25,7 +25,9 @@ func DecodeMessage(msg []byte) Message {
 	case bytes.Contains(label, []byte("REQ")):
 		v = &MessageReq{}
 	case bytes.Contains(label, []byte("OK")):
-		v = &MessageResult{}
+		v = &MessageOk{}
+	case bytes.Contains(label, []byte("EOSE")):
+		v = &MessageEose{}
 	default:
 		log.Fatalln("cannot decode message")
 	}
@@ -51,20 +53,23 @@ type Message interface {
 	MarshalJSON() ([]byte, error)
 }
 
-// ----------------------------------------------
-
 // NIP-20 - ["OK", <event_id>, <true|false>, <message>]
-type MessageResult struct {
+
+type MessageOk struct {
 	EventId string
-	Stored  bool
+	Ok      bool
 	Message string
 }
 
-func (s MessageResult) Type() MessageType {
+func (s MessageOk) GetEventId() string {
+	return strings.Trim(s.EventId, "\"")
+}
+
+func (s MessageOk) Type() MessageType {
 	return MessageType("OK")
 }
 
-func (s *MessageResult) UnmarshalJSON(data []byte) error {
+func (s *MessageOk) UnmarshalJSON(data []byte) error {
 
 	var tmp []json.RawMessage
 
@@ -75,9 +80,9 @@ func (s *MessageResult) UnmarshalJSON(data []byte) error {
 
 	s.EventId = string(tmp[1])
 
-	s.Stored = false
+	s.Ok = false
 	if string(tmp[2]) == "true" {
-		s.Stored = true
+		s.Ok = true
 	}
 
 	s.Message = string(tmp[3])
@@ -85,7 +90,7 @@ func (s *MessageResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s MessageResult) MarshalJSON() ([]byte, error) {
+func (s MessageOk) MarshalJSON() ([]byte, error) {
 
 	msg := append([]byte(nil), []byte(`["OK",`)...)
 
@@ -93,7 +98,7 @@ func (s MessageResult) MarshalJSON() ([]byte, error) {
 		msg = append(msg, []byte(s.EventId+`,`)...)
 	}
 
-	if s.Stored {
+	if s.Ok {
 		msg = append(msg, []byte("true")...)
 	} else {
 		msg = append(msg, []byte("false")...)
@@ -104,13 +109,14 @@ func (s MessageResult) MarshalJSON() ([]byte, error) {
 	return msg, nil
 }
 
-// ----------------------------------------------
+// NIP-01 - ["EVENT", <subscription_id>, <event JSON as defined above>]
 
 type MessageEvent struct {
 	SubscriptionId string
 	Event
 }
 
+// Jesus christ, the Subscription map didnt want to map unless trimmed. Mother fucker. Fuck trimming string always. jesus christ
 func (s MessageEvent) GetSubId() string {
 	return strings.Trim(s.SubscriptionId, "\"")
 }
@@ -128,6 +134,8 @@ func (s *MessageEvent) UnmarshalJSON(data []byte) error {
 		log.Fatalln("unable to unmarshal EVENT msg")
 	}
 
+	// Is len(2) then it is an event from client-to-relay
+	// Otherwise its an event from relay-to-client
 	switch len(tmp) {
 	case 2:
 		return json.Unmarshal(tmp[1], &s.Event)
@@ -139,7 +147,6 @@ func (s *MessageEvent) UnmarshalJSON(data []byte) error {
 	}
 }
 
-// NIP-01 - ["EVENT", <event JSON as defined above>]
 func (s MessageEvent) MarshalJSON() ([]byte, error) {
 
 	msg := append([]byte(nil), []byte(`["EVENT",`)...)
@@ -161,7 +168,7 @@ func (s MessageEvent) MarshalJSON() ([]byte, error) {
 	return msg, nil
 }
 
-// ----------------------------------------------
+// NIP-01 - ["REQ", <subscription_id>, <filters JSON>...]
 
 type MessageReq struct {
 	SubscriptionId string
@@ -190,7 +197,6 @@ func (s *MessageReq) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(tmp[2], &s.Filters)
 }
 
-// NIP-01 - ["REQ", <subscription_id>, <filters JSON>...]
 func (s MessageReq) MarshalJSON() ([]byte, error) {
 
 	msg := []byte(nil)
@@ -203,9 +209,6 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 
 	// Add subscription ID between string braces.
 	msg = append(msg, []byte(`"`+s.SubscriptionId+`",`)...)
-
-	// Open the filter list
-	//msg = append(msg, []byte(`{`)...)
 
 	for i, v := range s.Filters {
 
@@ -224,8 +227,52 @@ func (s MessageReq) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	// Close the filter list
-	//msg = append(msg, []byte(`}`)...)
+	// Close the entire message.
+	msg = append(msg, []byte(`]`)...)
+
+	return msg, nil
+}
+
+// NIP-01 - ["EOSE", <subscription_id>]
+
+type MessageEose struct {
+	SubscriptionId string
+}
+
+func (s MessageEose) GetSubId() string {
+	return strings.Trim(s.SubscriptionId, "\"")
+}
+
+func (s MessageEose) Type() MessageType {
+	return MessageType("EOSE")
+}
+
+func (s *MessageEose) UnmarshalJSON(data []byte) error {
+
+	var tmp []json.RawMessage
+
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		log.Fatalln("unable to unmarshal REQ msg")
+	}
+
+	s.SubscriptionId = string(tmp[1])
+
+	return nil
+}
+
+func (s MessageEose) MarshalJSON() ([]byte, error) {
+
+	msg := []byte(nil)
+
+	// Open message array.
+	msg = append(msg, []byte(`[`)...)
+
+	// Add message label
+	msg = append(msg, []byte(`"REQ",`)...)
+
+	// Add subscription ID between string braces.
+	msg = append(msg, []byte(`"`+s.SubscriptionId+`"`)...)
 
 	// Close the entire message.
 	msg = append(msg, []byte(`]`)...)

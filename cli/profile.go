@@ -1,17 +1,13 @@
-package main
+package cli
 
 import (
-	"encoding/json"
 	"flag"
 	"log"
-	"strconv"
 
-	"github.com/gorilla/websocket"
-	"github.com/rubenvanstaden/crypto"
-	"github.com/rubenvanstaden/nostr/core"
+	"github.com/rubenvanstaden/nostr"
 )
 
-func NewProfile(cfg *core.Config, cc *Connection) *Profile {
+func NewProfile(cfg *Config, cc *Connection) *Profile {
 
 	gc := &Profile{
 		fs:  flag.NewFlagSet("profile", flag.ContinueOnError),
@@ -31,7 +27,7 @@ func NewProfile(cfg *core.Config, cc *Connection) *Profile {
 
 type Profile struct {
 	fs  *flag.FlagSet
-	cfg *core.Config
+	cfg *Config
 	cc  *Connection
 
 	// Change the name field in profile.
@@ -81,10 +77,10 @@ func (s *Profile) Run() error {
 
 	// Commit event to relays to update profile.
 	if s.commit {
-		e := core.Event{
-			Kind:      core.KindSetMetadata,
+		e := nostr.Event{
+			Kind:      nostr.KindSetMetadata,
 			Tags:      nil,
-			CreatedAt: core.Now(),
+			CreatedAt: nostr.Now(),
 			Content:   s.cfg.Profile.String(),
 		}
 		status, err := s.cc.Publish(e)
@@ -100,48 +96,12 @@ func (s *Profile) Run() error {
 // View the current state of the profile as defined in CONFIG_PATH
 func (s *Profile) view() error {
 
-	config, err := core.DecodeConfig(CONFIG_PATH)
+	config, err := DecodeConfig(s.cfg.Path)
 	if err != nil {
 		log.Fatalf("unable to decode local config: %v", err)
 	}
 
-	log.Printf("\n%#v\n", config)
-
-	return nil
-}
-
-// Publich a REQ to relay to return and EVENT of Kind 0.
-func (s *Profile) request(npub string) error {
-
-	// Decode npub using NIP-19
-	_, pk, err := crypto.DecodeBech32(npub)
-	if err != nil {
-		log.Fatalf("\nunable to decode npub: %#v", err)
-	}
-
-	f := core.Filter{
-		Authors: []string{pk.(string)},
-		Kinds:   []uint32{core.KindSetMetadata},
-	}
-
-	var req core.MessageReq
-	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.cc.counter)
-	req.Filters = core.Filters{f}
-
-	// Marshal to a slice of bytes ready for transmission.
-	msg, err := json.Marshal(req)
-	if err != nil {
-		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
-	}
-
-	log.Printf("[\033[32m*\033[0m] client")
-	log.Printf("  request to show user profile (npub: %s...)", npub[:10])
-
-	// Transmit event message to the spoke that connects to the relays.
-	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
-	if err != nil {
-		return err
-	}
+	PrintJson(config)
 
 	return nil
 }

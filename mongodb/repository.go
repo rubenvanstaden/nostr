@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/rubenvanstaden/nostr"
 	"github.com/rubenvanstaden/nostr/core"
 )
 
@@ -44,7 +45,7 @@ func New(url, database, collection string) core.Repository {
 	}
 }
 
-func (s *repository) Store(ctx context.Context, event *core.Event) error {
+func (s *repository) Store(ctx context.Context, event *nostr.Event) error {
 
 	const op = "mongodb.Store"
 
@@ -59,7 +60,7 @@ func (s *repository) Store(ctx context.Context, event *core.Event) error {
 	return nil
 }
 
-func (s *repository) FindByAuthors(ctx context.Context, authors []string) ([]core.Event, error) {
+func (s *repository) FindByAuthors(ctx context.Context, authors []string) ([]nostr.Event, error) {
 
 	const op = "mongodb.FindByAuthors"
 
@@ -75,9 +76,9 @@ func (s *repository) FindByAuthors(ctx context.Context, authors []string) ([]cor
 	}
 	defer cur.Close(ctx)
 
-	var results []core.Event
+	var results []nostr.Event
 	for cur.Next(ctx) {
-		var result core.Event
+		var result nostr.Event
 		err := cur.Decode(&result)
 		if err != nil {
 			log.Fatal(err)
@@ -92,7 +93,7 @@ func (s *repository) FindByAuthors(ctx context.Context, authors []string) ([]cor
 	return results, nil
 }
 
-func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]core.Event, error) {
+func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]nostr.Event, error) {
 
 	const op = "mongodb.FindByIdPrefix"
 
@@ -108,9 +109,9 @@ func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]c
 	}
 	defer cur.Close(ctx)
 
-	var results []core.Event
+	var results []nostr.Event
 	for cur.Next(ctx) {
-		var result core.Event
+		var result nostr.Event
 		err := cur.Decode(&result)
 		if err != nil {
 			log.Fatal(err)
@@ -125,14 +126,14 @@ func (s *repository) FindByIdPrefix(ctx context.Context, prefixes []string) ([]c
 	return results, nil
 }
 
-func (s *repository) Find(ctx context.Context, id string) (*core.Event, error) {
+func (s *repository) Find(ctx context.Context, id string) (*nostr.Event, error) {
 
 	const op = "mongodb.FindById"
 
 	filter := bson.M{"_id": bson.M{"$eq": id}}
 	result := s.collection.FindOne(ctx, filter)
 
-	var event core.Event
+	var event nostr.Event
 
 	err := result.Decode(&event)
 	if err != nil {
