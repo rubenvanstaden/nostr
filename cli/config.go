@@ -10,11 +10,11 @@ import (
 )
 
 type Config struct {
-	Path       string          `json:"path"`
-	PublicKey  string          `json:"publickey,omitempty"`
-	PrivateKey string          `json:"privatekey,omitempty"`
-	Profile    nostr.Profile   `json:"profile"`
-	Relays     []string        `json:"relays,omitempty"`
+	Path       string            `json:"path"`
+	PublicKey  string            `json:"publickey,omitempty"`
+	PrivateKey string            `json:"privatekey,omitempty"`
+	Profile    nostr.Profile     `json:"profile"`
+	Relays     []string          `json:"relays,omitempty"`
 	Following  map[string]Author `json:"following,omitempty"`
 }
 
@@ -24,16 +24,15 @@ type Author struct {
 }
 
 func NewConfig() *Config {
-    return &Config{
-        Path: "",
-        PublicKey: "",
-        PrivateKey: "",
-        Profile: nostr.Profile{},
-        Relays: []string{},
-        Following: make(map[string]Author),
-    }
+	return &Config{
+		Path:       "",
+		PublicKey:  "",
+		PrivateKey: "",
+		Profile:    nostr.Profile{},
+		Relays:     []string{},
+		Following:  make(map[string]Author),
+	}
 }
-
 
 func DecodeConfig(path string) (*Config, error) {
 
@@ -45,7 +44,7 @@ func DecodeConfig(path string) (*Config, error) {
 	defer file.Close()
 
 	// Decode the file
-    config := NewConfig()
+	config := NewConfig()
 
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(config)

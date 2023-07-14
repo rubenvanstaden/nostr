@@ -59,6 +59,12 @@ func main() {
 	}
 
 	cc := cli.NewConnection(cfg.Relays[0])
+
+	err = cc.Listen()
+	if err != nil {
+		log.Fatalf("unable to listen to relay: %v", err)
+	}
+
 	defer cc.Close()
 
 	// Parse CLI commands and process events
@@ -67,4 +73,5 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
 }

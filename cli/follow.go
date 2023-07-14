@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"flag"
 	"log"
 
@@ -12,9 +11,9 @@ import (
 func NewFollow(cfg *Config, cc *Connection) *Follow {
 
 	gc := &Follow{
-		fs: flag.NewFlagSet("follow", flag.ContinueOnError),
-        cfg: cfg,
-		cc: cc,
+		fs:  flag.NewFlagSet("follow", flag.ContinueOnError),
+		cfg: cfg,
+		cc:  cc,
 	}
 
 	gc.fs.StringVar(&gc.ls, "ls", "", "list all following users")
@@ -25,9 +24,9 @@ func NewFollow(cfg *Config, cc *Connection) *Follow {
 }
 
 type Follow struct {
-	fs *flag.FlagSet
-    cfg *Config
-	cc *Connection
+	fs  *flag.FlagSet
+	cfg *Config
+	cc  *Connection
 
 	ls     string
 	add    string
@@ -64,19 +63,17 @@ func (s *Follow) Run() error {
 
 func (s *Follow) subscribe(npub string) error {
 
-    ctx := context.TODO()
+	// 1. Update local config with new user.
 
-    // 1. Update local config with new user.
+	s.cfg.Following[npub] = Author{
+		PublicKey: npub,
+		Name:      "Alice",
+	}
 
-    s.cfg.Following[npub] = Author{
-        PublicKey: npub,
-        Name: "Alice",
-    }
+	// Save to persistent file.
+	s.cfg.Encode()
 
-    // Save to persistent file.
-    s.cfg.Encode()
-
-    // 2. Send REQ to relays to add author.
+	// 2. Send REQ to relays to add author.
 
 	// Decode npub using NIP-19
 	_, pk, err := crypto.DecodeBech32(npub)
@@ -92,14 +89,14 @@ func (s *Follow) subscribe(npub string) error {
 
 	log.Printf("[\033[33m*\033[0m] client requests to follow %s...", npub[:20])
 
-    err = s.cc.Request(ctx, nostr.Filters{f})
+	sub, err := s.cc.Subscribe(nostr.Filters{f})
 	if err != nil {
 		log.Fatalf("\nunable to request new subsciption npub: %#v", err)
 	}
 
-    for event := range s.cc.EventStream {
-        PrintJson(event)
-    }
+	for event := range sub.EventStream {
+		PrintJson(event)
+	}
 
 	return nil
 }

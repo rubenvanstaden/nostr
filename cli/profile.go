@@ -1,13 +1,9 @@
 package cli
 
 import (
-	"encoding/json"
 	"flag"
 	"log"
-	"strconv"
 
-	"github.com/gorilla/websocket"
-	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/nostr"
 )
 
@@ -106,42 +102,6 @@ func (s *Profile) view() error {
 	}
 
 	PrintJson(config)
-
-	return nil
-}
-
-// Publich a REQ to relay to return and EVENT of Kind 0.
-func (s *Profile) request(npub string) error {
-
-	// Decode npub using NIP-19
-	_, pk, err := crypto.DecodeBech32(npub)
-	if err != nil {
-		log.Fatalf("\nunable to decode npub: %#v", err)
-	}
-
-	f := nostr.Filter{
-		Authors: []string{pk.(string)},
-		Kinds:   []uint32{nostr.KindSetMetadata},
-	}
-
-	var req nostr.MessageReq
-	req.SubscriptionId = "follow" + ":" + strconv.Itoa(s.cc.counter)
-	req.Filters = nostr.Filters{f}
-
-	// Marshal to a slice of bytes ready for transmission.
-	msg, err := json.Marshal(req)
-	if err != nil {
-		log.Fatalf("\nunable to marshal incoming REQ event: %#v", err)
-	}
-
-	log.Printf("[\033[32m*\033[0m] client")
-	log.Printf("  request to show user profile (npub: %s...)", npub[:10])
-
-	// Transmit event message to the spoke that connects to the relays.
-	err = s.cc.socket.WriteMessage(websocket.TextMessage, msg)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
