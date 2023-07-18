@@ -71,8 +71,6 @@ github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rubenvanstaden/color v0.1.0 h1:zXuiTSR9TavOFPNgnhzaqTnyRvh3xZWFjGUVLPw/ERQ=
 github.com/rubenvanstaden/color v0.1.0/go.mod h1:7NhZ2HQZ0WnVCMO52SK1JoilX2fv36AXN4OpIV3abYU=
-github.com/rubenvanstaden/crypto v0.1.1 h1:qFczI7ixHzuLl2AR6JCPeG31bU/aSDBwkLUCuvaG2XY=
-github.com/rubenvanstaden/crypto v0.1.1/go.mod h1:8tEQhQQCjbLG/8TRufvBQtvQA3QnT0EBtpPFpd/bl/k=
 github.com/rubenvanstaden/env v0.1.4 h1:fQqF9/HyL2wP9p9+f3iCf/fAuUvVKYLPskWHrOB2oBs=
 github.com/rubenvanstaden/env v0.1.4/go.mod h1:3uqUabze3StwIei/HnrseOrYLRGLIvVIdBFOZcmoLhw=
 github.com/rubenvanstaden/test v0.1.3 h1:alzrPs0OgCjPLeIqEokCIYeaqU6HZhSIJ/26IBKPILI=

@@ -13,8 +13,7 @@ import (
 
 var (
 	PRIVATE_KEY = env.String("NSEC")
-	PUBLIC_KEY  = env.String("NPUB")
-	CONFIG_PATH = env.String("CONFIG_PATH")
+	CONFIG_NOSTR = env.String("CONFIG_NOSTR")
 )
 
 type Runner interface {
@@ -53,7 +52,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	cfg, err := cli.DecodeConfig(CONFIG_PATH)
+	cfg, err := cli.DecodeConfig(CONFIG_NOSTR)
 	if err != nil {
 		log.Fatalf("unable to decode local cfg: %v", err)
 	}
@@ -73,5 +72,4 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 }

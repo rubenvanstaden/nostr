@@ -49,19 +49,20 @@ make relay
 ## CLI Interface
 
 ```shell
+ncli home -following
+
 # Manage relays
 ncli relay ls
 ncli relay add
 ncli relay remove
 
 # Manage events
-ncli event note <content>
-ncli event metadata <content>
-ncli event recommend <content>
+ncli event -note <content>
+ncli event -sign <event JSON>
 
 # Manage user following
 ncli follow ls
-ncli follow add <pubkey>
-ncli follow remove <pubkey>
+ncli follow -add <pubkey>
+ncli follow -remove <pubkey>
 ```
 

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 
-	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/nostr"
 )
 
@@ -45,7 +44,7 @@ func (s *Request) Run() error {
 	if s.profile != "" {
 
 		// Decode npub using NIP-19
-		_, pk, err := crypto.DecodeBech32(s.profile)
+		pk, err := nostr.DecodeBech32(s.profile)
 		if err != nil {
 			log.Fatalf("\nunable to decode npub: %#v", err)
 		}
@@ -73,7 +72,7 @@ func (s *Request) Run() error {
 	if s.notes != "" {
 
 		// Decode npub using NIP-19
-		_, pk, err := crypto.DecodeBech32(s.profile)
+		pk, err := nostr.DecodeBech32(s.profile)
 		if err != nil {
 			log.Fatalf("\nunable to decode npub: %#v", err)
 		}

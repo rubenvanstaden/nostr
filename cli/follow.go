@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 
-	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/nostr"
 )
 
@@ -76,7 +75,7 @@ func (s *Follow) subscribe(npub string) error {
 	// 2. Send REQ to relays to add author.
 
 	// Decode npub using NIP-19
-	_, pk, err := crypto.DecodeBech32(npub)
+	pk, err := nostr.DecodeBech32(npub)
 	if err != nil {
 		log.Fatalf("\nunable to decode npub: %#v", err)
 	}

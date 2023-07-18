@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/nostr"
 )
 
@@ -57,7 +56,7 @@ func (s *Home) Run() error {
 
 			log.Printf("* %s%s%s", "\033[35m", author.Name, "\033[0m")
 
-			_, pk, err := crypto.DecodeBech32(author.PublicKey)
+			pk, err := nostr.DecodeBech32(author.PublicKey)
 			if err != nil {
 				log.Fatalf("\nunable to decode npub: %#v", err)
 			}
