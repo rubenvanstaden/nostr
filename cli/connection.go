@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
-	"github.com/rubenvanstaden/crypto"
 	"github.com/rubenvanstaden/env"
 	"github.com/rubenvanstaden/nostr"
 )
@@ -133,7 +132,7 @@ func (s *Connection) Listen() error {
 		}
 	}()
 
-	log.Println("Connection established to relays")
+	//log.Println("Connection established to relays")
 
 	return nil
 }
@@ -146,10 +145,10 @@ func (s *Connection) Publish(event nostr.Event) (*nostr.MessageOk, error) {
 
 	// Apply NIP-19 to decode user-friendly secrets.
 	var sk string
-	if _, s, e := crypto.DecodeBech32(PRIVATE_KEY); e == nil {
+	if s, e := nostr.DecodeBech32(PRIVATE_KEY); e == nil {
 		sk = s.(string)
 	}
-	if pub, e := crypto.GetPublicKey(sk); e == nil {
+	if pub, e := nostr.GetPublicKey(sk); e == nil {
 		// Set public with which the event wat pushed.
 		event.PubKey = pub
 	}
@@ -158,8 +157,8 @@ func (s *Connection) Publish(event nostr.Event) (*nostr.MessageOk, error) {
 
 	go func() {
 		s.eventStream <- nostr.MessageEvent{
-            Event: event,
-        }
+			Event: event,
+		}
 	}()
 
 	for {
@@ -168,7 +167,7 @@ func (s *Connection) Publish(event nostr.Event) (*nostr.MessageOk, error) {
 			return nil, nil
 		case msg := <-s.okStream:
 			if msg.GetEventId() == event.GetId() {
-                log.Printf("OK: %v, eventId: %s, message: %s", msg.Ok, msg.GetEventId(), msg.Message)
+				log.Printf("OK: %v, eventId: %s, message: %s", msg.Ok, msg.GetEventId(), msg.Message)
 				return &msg, nil
 			}
 		}
