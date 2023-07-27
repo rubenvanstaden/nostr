@@ -1,40 +1,41 @@
-# Nostr
-
 Nostr command line tool and relay setup.
 
-NOTE: Use the [crypto](https://github.com/rubenvanstaden/crypto) package to generate a key exchange.
+## Basic CLI
 
-## Client CLI
-
-- Test with Damus relay
+1. Generate a private-public key pair.
 
 ```shell
-# Set as environment variables
-export NSEC="nsec..."
-export NPUB="npub..."
-export RELAY="relay.damus.io:443"
-export RELAY_CERT=cert/relay.damus.io.pem
+ncli key -gen
 ```
+
+2. Set the generated private key as an environment variable.
 
 ```shell
-# Post a note from the terminal.
-./bin/ncli --relay $RELAY note "fsociety"
-
-# Request a set of notes based on the filter configuration.
-./bin/ncli --relay $RELAY req 001 ~/.config/noztr/config.json
+export NSEC=<nsec>
 ```
 
-## Run Relay
+3. Add a configuration file
 
 ```shell
-// Set environment variables
-export RELAY="127.0.0.1:8080"
-export REPOSITORY="mongodb://127.0.0.1:27017"
+export CONFIG_NOSTR=$HOME/.config/nostr/alice.json
 
-// Spin up docker container
-make up
-
-// Spin up the relay service using websocket.
-make relay
+touch $CONFIG_NOSTR
 ```
 
+4. Before you can fetch notes you have to add atleast one relay
+
+```
+ncli relay -add ws://localhost:8080
+```
+
+5. Add users to follow, including yourself
+
+```
+ncli follow -add <npub>
+```
+
+6. Finally, echo your timeline of events pulled from the defined relays and follow list.
+
+```shell
+ncli home -following
+```

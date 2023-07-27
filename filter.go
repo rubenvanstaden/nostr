@@ -1,4 +1,4 @@
-package core
+package nostr
 
 import "strings"
 
@@ -13,7 +13,7 @@ type Filter struct {
 	// Only broadcast messages with kind in list.
 	Kinds []uint32 `json:"kinds,omitempty"`
 
-    // Maximum number of events to be returned in the initial query.
+	// Maximum number of events to be returned in the initial query.
 	Limit int `json:"limit,omitempty"`
 }
 
